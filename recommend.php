@@ -1,0 +1,251 @@
+<?php
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header("Location: auth/login.php");
+    exit;
+}
+require_once "db.php";
+
+/**
+ * Helper function to normalize image paths for browser
+ */
+function webPath(string $path): string {
+    if (!$path) return '';
+    $path = str_replace(['\\\\', '\\'], '/', $path);
+    $projectFolder = basename(dirname(__FILE__));
+    return '/' . $projectFolder . '/' . ltrim($path, '/');
+}
+
+$user_id = $_SESSION['user_id'];
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$limit = 10;
+$offset = ($page - 1) * $limit;
+
+// Filters from GET request
+$filterEvent = $_GET['event'] ?? '';
+$filterStyle = $_GET['style'] ?? '';
+$filterMode = $_GET['mode'] ?? '';
+$searchQuery = $_GET['search'] ?? '';
+
+// Build query
+$query = "SELECT SQL_CALC_FOUND_ROWS * FROM ootd_history WHERE user_id = ? ";
+$params = [$user_id];
+
+if ($filterEvent) { $query .= "AND event = ? "; $params[] = $filterEvent; }
+if ($filterStyle) { $query .= "AND style = ? "; $params[] = $filterStyle; }
+if ($filterMode) { $query .= "AND mode = ? "; $params[] = $filterMode; }
+if ($searchQuery) { $query .= "AND event LIKE ? "; $params[] = "%$searchQuery%"; }
+
+$query .= "ORDER BY created_at DESC LIMIT ? OFFSET ?";
+$params[] = $limit;
+$params[] = $offset;
+
+$history_stmt = $pdo->prepare($query);
+foreach ($params as $i => $param) {
+    $type = is_int($param) ? PDO::PARAM_INT : PDO::PARAM_STR;
+    $history_stmt->bindValue($i + 1, $param, $type);
+}
+$history_stmt->execute();
+$history = $history_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Pagination
+$total_rows = $pdo->query("SELECT FOUND_ROWS()")->fetchColumn();
+$total_pages = ceil($total_rows / $limit);
+
+// Distinct dropdown values (always fetch all, even if filtered)
+$distinctEventsStmt = $pdo->prepare("SELECT DISTINCT event FROM ootd_history WHERE user_id=? AND event IS NOT NULL AND event != '' ORDER BY event");
+$distinctEventsStmt->execute([$user_id]);
+$distinctEvents = $distinctEventsStmt->fetchAll(PDO::FETCH_COLUMN);
+
+$distinctStylesStmt = $pdo->prepare("SELECT DISTINCT style FROM ootd_history WHERE user_id=? AND style IS NOT NULL AND style != '' ORDER BY style");
+$distinctStylesStmt->execute([$user_id]);
+$distinctStyles = $distinctStylesStmt->fetchAll(PDO::FETCH_COLUMN);
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Wardrobe - Recommendations</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<nav class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+    <!-- Logo & Title -->
+    <div class="flex items-center space-x-3">
+        <img src="https://img.icons8.com/color/48/wardrobe.png" class="h-8 w-8" alt="AI Wardrobe Logo">
+        <span class="text-xl font-bold text-gray-800">AI Wardrobe</span>
+    </div>
+
+    <!-- Navigation Links -->
+    <div class="flex space-x-6">
+        <a href="home.php" class="text-gray-600 font-semibold transition-colors duration-200 hover:text-blue-800">Home</a>
+        <a href="recommend.php" class="text-blue-600 font-medium transition-colors duration-200 hover:text-blue-600">Recommendations</a>
+        <a href="profile.php" class="text-gray-600 font-medium transition-colors duration-200 hover:text-blue-600">Profile</a>
+        <a href="auth/logout.php" class="text-red-500 font-medium transition-colors duration-200 hover:text-red-700">Logout</a>
+    </div>
+</nav>
+
+
+<div class="max-w-5xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+    <h2 class="text-2xl font-bold mb-6 text-gray-700">Your Past Recommendations</h2>
+
+    <!-- Filters -->
+    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+        <form method="GET" class="space-y-4 md:flex md:space-x-4 md:space-y-0 items-center">
+            <input type="text" name="search" placeholder="Search by event..." value="<?= htmlspecialchars($searchQuery) ?>"
+                   class="w-full md:flex-1 rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <select name="event" class="rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All Events</option>
+                <?php foreach($distinctEvents as $e): ?>
+                    <option value="<?= htmlspecialchars($e) ?>" <?= $filterEvent === $e ? 'selected' : '' ?>>
+                        <?= htmlspecialchars(ucwords(str_replace('_',' ',$e))) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <select name="style" class="rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All Styles</option>
+                <?php foreach($distinctStyles as $s): ?>
+                    <option value="<?= htmlspecialchars($s) ?>" <?= $filterStyle === $s ? 'selected' : '' ?>>
+                        <?= htmlspecialchars(ucwords(str_replace('_',' ',$s))) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <select name="mode" class="rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All Modes</option>
+                <option value="automatic" <?= $filterMode==='automatic'?'selected':'' ?>>Automatic</option>
+                <option value="manual" <?= $filterMode==='manual'?'selected':'' ?>>Manual</option>
+            </select>
+        </form>
+    </div>
+
+    <?php if ($history): ?>
+    <div class="grid md:grid-cols-2 gap-6">
+        <?php foreach($history as $h): ?>
+            <?php
+                $items = json_decode($h['items'], true) ?: [];
+                $top_match = json_decode($h['top_match'], true) ?: [];
+            ?>
+            <div class="bg-white shadow rounded-xl p-5 relative">
+                <!-- Delete Icon -->
+                <button class="delete-btn absolute top-3 right-3 text-red-500 hover:text-red-700" data-id="<?= $h['id'] ?>">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+
+                <h3 class="font-semibold text-gray-700 mb-1">
+                    <?= htmlspecialchars(ucwords(str_replace("_"," ",$h['event']))) ?>
+                    <span class="text-sm text-gray-500">(<?= $h['mode'] ?>)</span>
+                </h3>
+                <p class="text-xs text-gray-500 mb-3"><?= $h['created_at'] ?></p>
+
+                <div class="flex flex-wrap gap-3 mb-3">
+                    <?php foreach($items as $it): 
+                        $imgPath = webPath($it['path'] ?? '');
+                        if (!$imgPath) continue;
+                    ?>
+                        <div class="w-28">
+                            <img src="<?= htmlspecialchars($imgPath) ?>" class="w-28 h-28 object-cover rounded-lg border">
+                            <p class="text-xs mt-1 text-center text-gray-600">
+                                <?= $h['mode'] === 'automatic' ? htmlspecialchars(ucfirst($it['detected_type'] ?? '')) . '<br>' : '' ?>
+                                <?= htmlspecialchars($it['recommendation'] ?? '') ?>
+                            </p>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <?php if (!empty($top_match)): ?>
+                    <div>
+                        <?php
+                        if (isset($top_match['items']) && is_array($top_match['items'])) {
+                            foreach ($top_match['items'] as $tm) {
+                                $topImg = webPath($tm['path'] ?? '');
+                                if ($topImg) {
+                                    echo '<img src="'.htmlspecialchars($topImg).'" class="w-32 h-32 object-cover rounded-lg border mb-1">';
+                                    echo '<p class="text-sm text-gray-700"><span class="font-semibold">Top Match ('.htmlspecialchars($tm['detected_type']).'):</span> '.htmlspecialchars($tm['recommendation'] ?? 'N/A').'</p>';
+                                }
+                            }
+                        } else {
+                            $topImg = webPath($top_match['path'] ?? '');
+                            if ($topImg) {
+                                echo '<img src="'.htmlspecialchars($topImg).'" class="w-32 h-32 object-cover rounded-lg border mb-1">';
+                                echo '<p class="text-sm text-gray-700"><span class="font-semibold">Top Match:</span> '.htmlspecialchars($top_match['recommendation'] ?? 'N/A').'</p>';
+                            }
+                        }
+                        ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endforeach; ?>
+    </div>
+
+    <!-- Pagination -->
+    <div class="mt-8 flex justify-center space-x-2">
+        <?php for($i=1; $i<=$total_pages; $i++): ?>
+            <a href="?page=<?= $i ?>&search=<?= htmlspecialchars($searchQuery) ?>&event=<?= htmlspecialchars($filterEvent) ?>&style=<?= htmlspecialchars($filterStyle) ?>&mode=<?= htmlspecialchars($filterMode) ?>"
+               class="px-4 py-2 rounded-md <?= $page==$i ? 'bg-blue-600 text-white':'bg-gray-200 text-gray-700 hover:bg-gray-300' ?>"><?= $i ?></a>
+        <?php endfor; ?>
+    </div>
+
+    <?php else: ?>
+        <p class="text-gray-500 text-center">No recommendations found matching your criteria.</p>
+    <?php endif; ?>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const inputs = form.querySelectorAll('input, select');
+
+    inputs.forEach(el => {
+        if (el.tagName === 'SELECT') {
+            el.addEventListener('change', () => form.submit());
+        }
+        if (el.type === 'text') {
+            el.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') form.submit();
+            });
+        }
+    });
+
+    // Delete history
+    const deleteButtons = document.querySelectorAll('.delete-btn');
+    deleteButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.dataset.id;
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "This history record will be permanently deleted!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('delete_history.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.success){
+                            Swal.fire('Deleted!', 'Your history record has been deleted.', 'success');
+                            this.closest('.bg-white').remove();
+                        } else {
+                            Swal.fire('Error!', data.message || 'Could not delete.', 'error');
+                        }
+                    })
+                    .catch(() => Swal.fire('Error!', 'Could not delete.', 'error'));
+                }
+            });
+        });
+    });
+});
+</script>
+
+</body>
+</html>
