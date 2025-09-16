@@ -19,42 +19,34 @@ $latest = $history_stmt->fetch();
     <meta charset="UTF-8">
     <title>AI Wardrobe - Recommendation</title>
     <style>
-    /* Animated spinning gradient loader */
     .loader {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background: conic-gradient(#3b82f6, #06b6d4, #3b82f6);
-    animation: spin 1s linear infinite;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: conic-gradient(#3b82f6, #06b6d4, #3b82f6);
+        animation: spin 1s linear infinite;
     }
-
     @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
     </style>
-
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen">
 <nav class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-    <!-- Logo & Title -->
     <div class="flex items-center space-x-3">
         <img src="https://img.icons8.com/color/48/wardrobe.png" class="h-8 w-8" alt="AI Wardrobe Logo">
         <span class="text-xl font-bold text-gray-800">AI Wardrobe</span>
     </div>
-
-    <!-- Navigation Links -->
     <div class="flex space-x-6">
-        <a href="index.php" class="text-blue-600 font-semibold transition-colors duration-200 hover:text-blue-800">Home</a>
-        <a href="recommend.php" class="text-gray-600 font-medium transition-colors duration-200 hover:text-blue-600">Recommendations</a>
-        <a href="profile.php" class="text-gray-600 font-medium transition-colors duration-200 hover:text-blue-600">Profile</a>
-        <a href="auth/logout.php" class="text-red-500 font-medium transition-colors duration-200 hover:text-red-700">Logout</a>
+        <a href="index.php" class="text-blue-600 font-semibold hover:text-blue-800">Home</a>
+        <a href="recommend.php" class="text-gray-600 font-medium hover:text-blue-600">Recommendations</a>
+        <a href="profile.php" class="text-gray-600 font-medium hover:text-blue-600">Profile</a>
+        <a href="auth/logout.php" class="text-red-500 font-medium hover:text-red-700">Logout</a>
     </div>
 </nav>
 
-
-<!-- Main Layout -->
 <div class="flex justify-center py-10 px-6">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-6xl">
 
@@ -62,7 +54,6 @@ $latest = $history_stmt->fetch();
         <div class="bg-white shadow-lg rounded-2xl p-8">
             <h2 class="text-2xl font-bold mb-6 text-center text-gray-700">Get Your AI Recommendation</h2>
 
-            <!-- Info Box -->
             <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-3 rounded mb-4 text-sm">
                 ⚠️ Note: Accessories and shoes are excluded. Only upper, lower, or full-body wardrobe items are used.
             </div>
@@ -91,22 +82,9 @@ $latest = $history_stmt->fetch();
                     <div>
                         <label class="block font-medium">Event</label>
                         <select name="event" class="w-full border rounded p-2" required>
-                            <option value="formal_wedding">Formal Wedding</option>
-                            <option value="casual_wedding">Casual Wedding</option>
-                            <option value="summer_party">Summer Party</option>
+                            <option value="wedding">Wedding</option>
                             <option value="beach_party">Beach Party</option>
-                            <option value="casual_office">Casual Office</option>
-                            <option value="formal_office">Formal Office</option>
-                            <option value="streetwear">Streetwear</option>
-                            <option value="gym">Gym / Workout</option>
-                            <option value="winter_casual">Winter Casual</option>
-                            <option value="travel">Travel</option>
-                            <option value="date_night">Date Night</option>
-                            <option value="music_festival">Music Festival</option>
-                            <option value="business_meeting">Business Meeting</option>
-                            <option value="graduation">Graduation</option>
-                            <option value="funeral">Funeral</option>
-                            <option value="sports_event">Sports Event</option>
+                            <option value="birthday">Birthday</option>
                         </select>
                     </div>
 
@@ -150,22 +128,9 @@ $latest = $history_stmt->fetch();
                     <div>
                         <label class="block font-medium">Event</label>
                         <select name="event" class="w-full border rounded p-2" required>
-                            <option value="formal_wedding">Formal Wedding</option>
-                            <option value="casual_wedding">Casual Wedding</option>
-                            <option value="summer_party">Summer Party</option>
+                            <option value="wedding">Wedding</option>
                             <option value="beach_party">Beach Party</option>
-                            <option value="casual_office">Casual Office</option>
-                            <option value="formal_office">Formal Office</option>
-                            <option value="streetwear">Streetwear</option>
-                            <option value="gym">Gym / Workout</option>
-                            <option value="winter_casual">Winter Casual</option>
-                            <option value="travel">Travel</option>
-                            <option value="date_night">Date Night</option>
-                            <option value="music_festival">Music Festival</option>
-                            <option value="business_meeting">Business Meeting</option>
-                            <option value="graduation">Graduation</option>
-                            <option value="funeral">Funeral</option>
-                            <option value="sports_event">Sports Event</option>
+                            <option value="birthday">Birthday</option>
                         </select>
                     </div>
 
@@ -197,80 +162,8 @@ $latest = $history_stmt->fetch();
         <!-- Card 2: Result -->
         <div class="bg-white shadow-lg rounded-2xl p-8">
             <h2 class="text-2xl font-bold mb-6 text-center text-gray-700">Latest Result</h2>
-
             <div id="latest-result">
-                <?php if ($latest): ?>
-                    <?php 
-                        $items = json_decode($latest['items'], true) ?? [];
-                        $top_match = json_decode($latest['top_match'], true) ?? [];
-
-                        // Normalize top_match to always have items[]
-                        if (isset($top_match['path'])) {
-                            $top_match = ['items' => [$top_match]];
-                        }
-
-                        $style = $latest['style'] ?? ($items[0]['details']['style'] ?? 'N/A');
-                        $wardrobe_type = null;
-                        if ($latest['mode'] === 'manual') {
-                            $wardrobe_type = $items[0]['detected_type'] ?? 'N/A';
-                        }
-                    ?>
-
-                    <div class="mb-4 text-center">
-                        <h3 class="text-lg font-semibold text-gray-700">
-                            <?= htmlspecialchars(ucwords(str_replace("_"," ",$latest['event']))) ?>
-                            <span class="text-sm text-gray-500">
-                                (<?= $latest['mode'] ?>, <?= htmlspecialchars($style) ?>
-                                <?php if ($wardrobe_type): ?>, <?= htmlspecialchars($wardrobe_type) ?><?php endif; ?>)
-                            </span>
-                        </h3>
-                        <p class="text-xs text-gray-500"><?= $latest['created_at'] ?></p>
-                    </div>
-
-                    <?php if(!empty($top_match['items'])): ?>
-                        <h4 class="text-md font-semibold text-gray-600 mb-2">Top Matches</h4>
-                        <div class="flex flex-wrap gap-3 mb-6 justify-center">
-                            <?php foreach($top_match['items'] as $match): ?>
-                                <?php 
-                                    $imgPath = isset($match['path']) ? str_replace("\\", "/", $match['path']) : '';
-                                    if ($imgPath) $imgPath = '/ai-wardrobe/' . ltrim($imgPath, '/');
-                                ?>
-                                <?php if($imgPath): ?>
-                                    <div class="w-32">
-                                        <img src="<?= htmlspecialchars($imgPath) ?>" class="w-32 h-32 object-cover rounded-lg border mb-2">
-                                        <p class="text-xs text-center text-gray-700 font-medium">
-                                            <?= htmlspecialchars($match['recommendation'] ?? '') ?>
-                                        </p>
-                                    </div>
-                                <?php endif; ?>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-
-                    <?php if($items): ?>
-                        <h4 class="text-md font-semibold text-gray-600 mb-2">Uploaded Items</h4>
-                        <div class="flex flex-wrap gap-3 mb-4">
-                            <?php foreach($items as $it): ?>
-                                <?php 
-                                    $imgPath = isset($it['path']) ? str_replace("\\", "/", $it['path']) : '';
-                                    if ($imgPath) $imgPath = '/ai-wardrobe/' . ltrim($imgPath, '/');
-                                    $detType = $it['detected_type'] ?? '';
-                                    if (in_array($detType, ['accessory','shoes'])) continue;
-                                ?>
-                                <?php if($imgPath): ?>
-                                    <div class="w-28">
-                                        <img src="<?= htmlspecialchars($imgPath) ?>" class="w-28 h-28 object-cover rounded-lg border">
-                                        <p class="text-xs mt-1 text-center text-gray-600">
-                                            <?= htmlspecialchars($it['recommendation'] ?? '') ?>
-                                        </p>
-                                    </div>
-                                <?php endif; ?>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-                <?php else: ?>
-                    <p class="text-gray-500 text-center">No recommendations yet.</p>
-                <?php endif; ?>
+                <p class="text-gray-500 text-center">No recommendations yet.</p>
             </div>
         </div>
 
@@ -281,10 +174,8 @@ $latest = $history_stmt->fetch();
 function showTab(tab) {
     document.querySelectorAll('.tab-content').forEach(div => div.classList.add('hidden'));
     document.getElementById(tab).classList.remove('hidden');
-
     document.getElementById('tab-manual').classList.remove('text-blue-600','border-blue-600','border-b-2');
     document.getElementById('tab-automatic').classList.remove('text-blue-600','border-blue-600','border-b-2');
-
     if(tab === 'manual'){
         document.getElementById('tab-manual').classList.add('text-blue-600','border-blue-600','border-b-2');
     } else {
@@ -311,57 +202,25 @@ function previewImages(event, previewId) {
     });
 }
 
-// // AJAX form submission
-// async function submitForm(formId) {
-//     const form = document.getElementById(formId);
-//     const formData = new FormData(form);
-
-//     const resultDiv = document.getElementById("latest-result");
-//     // resultDiv.innerHTML = "<p class='text-gray-500 text-center'>⏳ Generating recommendation...</p>";
-//     resultDiv.innerHTML = `
-//         <div class="flex flex-col items-center justify-center py-10">
-//             <div class="loader mb-3"></div>
-//             <p class="text-gray-500 text-center text-sm">AI is thinking...</p>
-//         </div>
-//     `;
-
-//     try {
-//         const response = await fetch("recommend_process.php", {
-//             method: "POST",
-//             body: formData
-//         });
-//         const data = await response.json();
-
-//         if (data.success) {
-//             renderLatestResult(data);
-//         } else {
-//             resultDiv.innerHTML = `<p class='text-red-500 text-center'>❌ ${data.error || "Something went wrong"}</p>`;
-//         }
-//     } catch (err) {
-//         resultDiv.innerHTML = `<p class='text-red-500 text-center'>⚠️ Error: ${err.message}</p>`;
-//     }
-// }
-
 async function submitForm(formId) {
     const form = document.getElementById(formId);
     const formData = new FormData(form);
-
     const resultDiv = document.getElementById("latest-result");
-    // Loader display
+
     resultDiv.innerHTML = `
         <div class="flex flex-col items-center justify-center py-10">
-            <div class="loader mb-3"></div>
-            <p class="text-gray-500 text-center text-sm">AI is thinking...</p>
-        </div>
+    <div class="loader mb-3"></div>
+    <p class="text-gray-500 text-center text-sm">AI is thinking...</p>
+    <p class="text-gray-400 text-center text-xs mt-2">
+        💡 Note: AI will just recommend the nearest match based on your uploaded wardrobe.
+    </p>
+</div>
+
     `;
 
     try {
-        const response = await fetch("recommend_process.php", {
-            method: "POST",
-            body: formData
-        });
+        const response = await fetch("recommend_process.php", { method: "POST", body: formData });
         const data = await response.json();
-
         if (data.success) {
             renderLatestResult(data);
         } else {
@@ -371,68 +230,116 @@ async function submitForm(formId) {
         resultDiv.innerHTML = `<p class='text-red-500 text-center'>⚠️ Error: ${err.message}</p>`;
     }
 }
-
-
-function renderLatestResult(data) {
-      if (data.top_match && !Array.isArray(data.top_match.items) && data.top_match.path) {
-        data.top_match = { items: [data.top_match] };
-    }
-
-    if (data.wardrobe_type === 'full-body') {
-        data.wardrobe_type = 'full_body';
-    }
-
-    data.event = (data.event || 'Unknown Event').replace(/_/g, ' ');
-    const resultDiv = document.getElementById("latest-result");
+function renderLatestResult(data, selectedWardrobeType) {
     let html = `
-        <div class="mb-4 text-center">
-            <h3 class="text-lg font-semibold text-gray-700">
-                ${data.event}
-                <span class="text-sm text-gray-500">
-                    (${data.mode}, ${data.style}${data.wardrobe_type ? ", " + data.wardrobe_type : ""})
-                </span>
-            </h3>
-            <p class="text-xs text-gray-500">${data.created_at}</p>
-        </div>
+        <h3 class="text-lg font-bold text-gray-800 mb-3">Recommendation Result</h3>
+        <p class="text-sm text-gray-600 mb-4">
+            <strong>Event:</strong> ${data.event.replace("_", " ")} <br>
+            <strong>Style:</strong> ${data.style || "unspecified"} <br>
+            <strong>Description:</strong> ${data.event_description || ""}
+        </p>
     `;
 
-    const normalizePath = (p) => "/ai-wardrobe/" + p.replace(/^\/+/, "");
-
-    // Handle top matches as array
+    // ---------------------------
+    // TOP MATCH SECTION
+    // ---------------------------
+    let topMatches = [];
     if (data.top_match?.items?.length > 0) {
-        html += `<h4 class="text-md font-semibold text-gray-600 mb-2">Top Matches</h4>
-                 <div class="flex flex-wrap gap-3 mb-6 justify-center">`;
-        data.top_match.items.forEach(match => {
+        if (data.mode === "manual") {
+            topMatches = [data.top_match.items[0]];
+        } else if (data.mode === "automatic") {
+            if (selectedWardrobeType !== "full-body") {
+                const upper = data.top_match.items.find(m => m.detected_type === "upper");
+                const lower = data.top_match.items.find(m => m.detected_type === "lower");
+                if (upper) topMatches.push(upper);
+                if (lower) topMatches.push(lower);
+            }
+        }
+    }
+
+    if (topMatches.length > 0) {
+        html += `
+            <div class="mb-8 p-4 border-2 border-green-400 rounded-lg bg-green-50 shadow-sm">
+                <h4 class="text-md font-semibold text-green-700 mb-3">
+                    🎯 Top Match${topMatches.length > 1 ? "es" : ""}
+                </h4>
+                <div class="flex flex-wrap gap-3 justify-center">
+        `;
+
+        topMatches.forEach(match => {
+            html += `
+                <div class="relative w-32">
+                    <span class="absolute top-1 left-1 bg-green-600 text-white text-[10px] px-2 py-0.5 rounded-md shadow">
+                        ${match.detected_type === "upper" ? "Best Upper-body Match" : 
+                          match.detected_type === "lower" ? "Best Lower-body Match" : "Top Match"}
+                    </span>
+                    <img src="${normalizePath(match.path)}" 
+                         class="w-32 h-32 object-cover rounded-lg border-4 border-green-500 mb-2">
+                    <p class="text-xs text-center text-green-600 font-bold">
+                        ✅ ${match.recommendation || "No valid match"}
+                    </p>
+                    <p class="text-[10px] text-gray-500 text-center">
+                        ${match.label} (${(match.similarity * 100).toFixed(1)}%)
+                    </p>
+                </div>
+            `;
+        });
+
+        html += `</div></div>`;
+    }
+
+    // ---------------------------
+    // UPLOADED ITEMS SECTION
+    // ---------------------------
+    if (data.items?.length > 0) {
+        if (selectedWardrobeType) {
+            html += `<p class="italic text-gray-600 mb-2">
+                        Note: Only ${selectedWardrobeType.toLowerCase()} items are displayed
+                     </p>`;
+        }
+
+        html += `
+            <h4 class="text-md font-semibold text-gray-600 mb-2">Uploaded Items</h4>
+            <div class="flex flex-wrap gap-3 mb-6 justify-center">
+        `;
+
+        data.items.forEach(it => {
+            if (["accessory", "shoes"].includes(it.detected_type)) return;
+
+            if (selectedWardrobeType &&
+                it.detected_type.toLowerCase() !== selectedWardrobeType.toLowerCase()) {
+                return;
+            }
+
+            // 🚫 Skip Top Matches
+            if (topMatches.some(m => m.path === it.path)) return;
+
             html += `
                 <div class="w-32">
-                    <img src="${normalizePath(match.path)}" class="w-32 h-32 object-cover rounded-lg border mb-2">
-                    <p class="text-xs text-center text-gray-700 font-medium">${match.recommendation || ""}</p>
+                    <img src="${normalizePath(it.path)}" 
+                         class="w-32 h-32 object-cover rounded-lg border mb-2">
+                    <p class="text-xs text-center text-gray-600">
+                        ${it.recommendation || "❌ No valid match"}
+                    </p>
+                    <p class="text-[10px] text-gray-500 text-center">
+                        (${it.similarity ? (it.similarity * 100).toFixed(1) + "%" : "N/A"})
+                    </p>
                 </div>
             `;
         });
+
         html += `</div>`;
     }
 
-    // Uploaded items
-    if (data.items?.length > 0) {
-        html += `<h4 class="text-md font-semibold text-gray-600 mb-2">Uploaded Items</h4>
-                 <div class="flex flex-wrap gap-3 mb-4">`;
-        data.items.forEach(it => {
-            if (["accessory","shoes"].includes(it.detected_type)) return;
-            html += `
-                <div class="w-28">
-                    <img src="${normalizePath(it.path)}" class="w-28 h-28 object-cover rounded-lg border">
-                    <p class="text-xs mt-1 text-center text-gray-600">${it.recommendation || ""}</p>
-                </div>
-            `;
-        });
-        html += `</div>`;
-    }
-
-    resultDiv.innerHTML = html;
+    document.getElementById("latest-result").innerHTML = html;
 }
 
-// Hook forms
+
+
+function normalizePath(path) {
+    return '/ai-wardrobe/' + path.replace(/\\/g, "/").replace(/^\/?ai-wardrobe\//, "");
+}
+
 document.getElementById("manual-form").addEventListener("submit", e => {
     e.preventDefault();
     submitForm("manual-form");
@@ -442,6 +349,5 @@ document.getElementById("automatic-form").addEventListener("submit", e => {
     submitForm("automatic-form");
 });
 </script>
-
 </body>
 </html>
