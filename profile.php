@@ -10,7 +10,7 @@ require_once "db.php";
 $user_id = $_SESSION['user_id'];
 
 // Fetch user info
-$stmt = $pdo->prepare("SELECT id, username, email, password, created_at FROM users WHERE id = ?");
+$stmt = $pdo->prepare("SELECT id, username, email, password, created_at, profile_pic FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -25,20 +25,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email'] ?? $user['email'];
     $password = $_POST['password'] ?? '';
 
+    // Handle profile picture upload
+    $profile_pic = $user['profile_pic']; // keep old if no new upload
+    if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = 'uploads/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+        $ext = pathinfo($_FILES['profile_pic']['name'], PATHINFO_EXTENSION);
+        $new_filename = 'profile_' . $user_id . '_' . time() . '.' . $ext;
+        $target_file = $upload_dir . $new_filename;
+
+        if (move_uploaded_file($_FILES['profile_pic']['tmp_name'], $target_file)) {
+            $profile_pic = $target_file;
+        }
+    }
+
     // Only hash and update if the password field is not empty
     if (!empty($password)) {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
     } else {
-        $hashed_password = $user['password']; // keep old password if blank
+        $hashed_password = $user['password'];
     }
 
-    $update_stmt = $pdo->prepare("UPDATE users SET username = ?, email = ?, password = ? WHERE id = ?");
-    $update_stmt->execute([$username, $email, $hashed_password, $user_id]);
+    $update_stmt = $pdo->prepare("UPDATE users SET username = ?, email = ?, password = ?, profile_pic = ? WHERE id = ?");
+    $update_stmt->execute([$username, $email, $hashed_password, $profile_pic, $user_id]);
 
     header("Location: profile.php");
     exit;
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -50,14 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body class="bg-gray-100 min-h-screen">
 
-    <nav class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-    <!-- Logo & Title -->
+<nav class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
     <div class="flex items-center space-x-3">
         <img src="https://img.icons8.com/color/48/wardrobe.png" class="h-8 w-8" alt="AI Wardrobe Logo">
         <span class="text-xl font-bold text-gray-800">AI Wardrobe</span>
     </div>
-
-    <!-- Navigation Links -->
     <div class="flex space-x-6">
         <a href="home.php" class="text-gray-600 font-semibold transition-colors duration-200 hover:text-blue-800">Home</a>
         <a href="recommend.php" class="text-gray-600 font-medium transition-colors duration-200 hover:text-blue-600">Recommendations</a>
@@ -66,56 +78,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </nav>
 
+<div class="max-w-3xl mx-auto mt-10 bg-white rounded-xl shadow-md p-8">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">User Profile</h2>
 
-    <!-- Profile Container -->
-    <div class="max-w-3xl mx-auto mt-10 bg-white rounded-xl shadow-md p-8">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6">User Profile</h2>
-
-        <form method="POST" class="space-y-6">
-            <!-- Profile picture -->
-            <div class="flex justify-center mb-6">
+    <form method="POST" enctype="multipart/form-data" class="space-y-6">
+        <div class="flex justify-center mb-6">
+            <?php if ($user['profile_pic'] && file_exists($user['profile_pic'])): ?>
+                <img src="<?= htmlspecialchars($user['profile_pic']) ?>" 
+                     class="h-24 w-24 rounded-full border-2 border-gray-300" 
+                     alt="Profile Picture">
+            <?php else: ?>
                 <img src="https://api.dicebear.com/6.x/avataaars/png?seed=<?= htmlspecialchars($user['username']) ?>" 
                      class="h-24 w-24 rounded-full border-2 border-gray-300" 
                      alt="Profile Picture">
-            </div>
+            <?php endif; ?>
+        </div>
 
-            <!-- Editable fields -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-gray-700 font-semibold mb-1">ID</label>
-                    <input type="text" value="<?= htmlspecialchars($user['id']) ?>" disabled
-                           class="w-full border border-gray-300 rounded-md p-2 bg-gray-100 cursor-not-allowed">
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-semibold mb-1">Created At</label>
-                    <input type="text" value="<?= htmlspecialchars($user['created_at']) ?>" disabled
-                           class="w-full border border-gray-300 rounded-md p-2 bg-gray-100 cursor-not-allowed">
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-semibold mb-1">Username</label>
-                    <input type="text" name="username" value="<?= htmlspecialchars($user['username']) ?>"
-                           class="w-full border border-gray-300 rounded-md p-2">
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-semibold mb-1">Email</label>
-                    <input type="email" name="email" value="<?= htmlspecialchars($user['email']) ?>"
-                           class="w-full border border-gray-300 rounded-md p-2">
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-gray-700 font-semibold mb-1">Password</label>
-                    <input type="password" name="password" value=""
-                           class="w-full border border-gray-300 rounded-md p-2">
-                </div>
-            </div>
+        <!-- Upload new profile picture -->
+        <div class="flex justify-center mb-4">
+            <input type="file" name="profile_pic" accept="image/*">
+        </div>
 
-            <div class="flex justify-end">
-                <button type="submit" 
-                        class="bg-blue-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-blue-700 transition-colors">
-                    Save
-                </button>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-gray-700 font-semibold mb-1">ID</label>
+                <input type="text" value="<?= htmlspecialchars($user['id']) ?>" disabled
+                       class="w-full border border-gray-300 rounded-md p-2 bg-gray-100 cursor-not-allowed">
             </div>
-        </form>
-    </div>
+            <div>
+                <label class="block text-gray-700 font-semibold mb-1">Created At</label>
+                <input type="text" value="<?= htmlspecialchars($user['created_at']) ?>" disabled
+                       class="w-full border border-gray-300 rounded-md p-2 bg-gray-100 cursor-not-allowed">
+            </div>
+            <div>
+                <label class="block text-gray-700 font-semibold mb-1">Username</label>
+                <input type="text" name="username" value="<?= htmlspecialchars($user['username']) ?>"
+                       class="w-full border border-gray-300 rounded-md p-2">
+            </div>
+            <div>
+                <label class="block text-gray-700 font-semibold mb-1">Email</label>
+                <input type="email" name="email" value="<?= htmlspecialchars($user['email']) ?>"
+                       class="w-full border border-gray-300 rounded-md p-2">
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-gray-700 font-semibold mb-1">Password</label>
+                <input type="password" name="password" value=""
+                       class="w-full border border-gray-300 rounded-md p-2">
+            </div>
+        </div>
+
+        <div class="flex justify-end">
+            <button type="submit" 
+                    class="bg-blue-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-blue-700 transition-colors">
+                Save
+            </button>
+        </div>
+    </form>
+</div>
 
 </body>
 </html>

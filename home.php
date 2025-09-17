@@ -230,100 +230,165 @@ async function submitForm(formId) {
         resultDiv.innerHTML = `<p class='text-red-500 text-center'>⚠️ Error: ${err.message}</p>`;
     }
 }
-function renderLatestResult(data, selectedWardrobeType) {
+function renderLatestResult(data) {
+    // Safely handle undefined event
+    let eventName = data.event ? data.event.replace("_", " ") : "Unknown event";
+
     let html = `
         <h3 class="text-lg font-bold text-gray-800 mb-3">Recommendation Result</h3>
         <p class="text-sm text-gray-600 mb-4">
-            <strong>Event:</strong> ${data.event.replace("_", " ")} <br>
+            <strong>Event:</strong> ${eventName} <br>
             <strong>Style:</strong> ${data.style || "unspecified"} <br>
             <strong>Description:</strong> ${data.event_description || ""}
         </p>
     `;
 
     // ---------------------------
-    // TOP MATCH SECTION
+    // Determine Top Matches
     // ---------------------------
     let topMatches = [];
-    if (data.top_match?.items?.length > 0) {
-        if (data.mode === "manual") {
-            topMatches = [data.top_match.items[0]];
-        } else if (data.mode === "automatic") {
-            if (selectedWardrobeType !== "full-body") {
-                const upper = data.top_match.items.find(m => m.detected_type === "upper");
-                const lower = data.top_match.items.find(m => m.detected_type === "lower");
-                if (upper) topMatches.push(upper);
-                if (lower) topMatches.push(lower);
-            }
+    const uploadedItems = data.items || [];
+
+    if (data.mode === "manual") {
+        if (data.top_match) topMatches.push(data.top_match);
+    } else { // automatic
+        // Get all items of each type
+        const upperItems = uploadedItems.filter(it => it.detected_type === "upper");
+        const lowerItems = uploadedItems.filter(it => it.detected_type === "lower");
+        const fullBodyItems = uploadedItems.filter(it => it.detected_type === "full-body");
+
+        // Pick the highest similarity for each type
+        const bestUpper = upperItems.length
+            ? upperItems.reduce((prev, curr) => curr.similarity > prev.similarity ? curr : prev)
+            : null;
+
+        const bestLower = lowerItems.length
+            ? lowerItems.reduce((prev, curr) => curr.similarity > prev.similarity ? curr : prev)
+            : null;
+
+        const bestFullBody = fullBodyItems.length
+            ? fullBodyItems.reduce((prev, curr) => curr.similarity > prev.similarity ? curr : prev)
+            : null;
+
+        // Determine whether full-body or upper+lower combo
+        const fullSim = bestFullBody ? bestFullBody.similarity : 0;
+        const upperSim = bestUpper ? bestUpper.similarity : 0;
+        const lowerSim = bestLower ? bestLower.similarity : 0;
+        const comboSim = ((upperSim + lowerSim) / ((bestUpper ? 1 : 0) + (bestLower ? 1 : 0) || 1));
+
+        if (bestFullBody && fullSim >= comboSim) {
+            topMatches.push(bestFullBody);
+        } else {
+            if (bestUpper) topMatches.push(bestUpper);
+            if (bestLower) topMatches.push(bestLower);
+        }
+
+        // Fallback: pick highest similarity if nothing selected
+        if (topMatches.length === 0 && uploadedItems.length > 0) {
+            const highest = uploadedItems.reduce((prev, curr) => curr.similarity > prev.similarity ? curr : prev);
+            topMatches.push(highest);
         }
     }
 
-    if (topMatches.length > 0) {
-        html += `
-            <div class="mb-8 p-4 border-2 border-green-400 rounded-lg bg-green-50 shadow-sm">
-                <h4 class="text-md font-semibold text-green-700 mb-3">
-                    🎯 Top Match${topMatches.length > 1 ? "es" : ""}
-                </h4>
-                <div class="flex flex-wrap gap-3 justify-center">
-        `;
+   // ---------------------------
+// Display Top Matches (stack upper+lower combo)
+// ---------------------------
+if (topMatches.length > 0) {
+    html += `
+        <div class="mb-8 p-4 border-2 border-green-400 rounded-lg bg-green-50 shadow-sm">
+            <h4 class="text-md font-semibold text-green-700 mb-3">🎯 Top Match${topMatches.length > 1 ? "es" : ""}</h4>
+            <div class="flex flex-wrap gap-3 justify-center">
+    `;
 
+    // Detect if both upper and lower exist
+    const hasUpper = topMatches.some(m => m.detected_type === "upper");
+    const hasLower = topMatches.some(m => m.detected_type === "lower");
+
+    if (hasUpper && hasLower) {
+        const upper = topMatches.find(m => m.detected_type === "upper");
+        const lower = topMatches.find(m => m.detected_type === "lower");
+
+        html += `
+            <div class="relative flex flex-col items-center w-32">
+                <!-- Upper -->
+                <span class="absolute top-1 left-1 bg-green-600 text-white text-[10px] px-2 py-0.5 rounded-md shadow">
+                    Best Upper-body
+                </span>
+                <img src="${normalizePath(upper.path)}" class="w-32 h-32 object-cover rounded-lg border-4 border-green-500 mb-1">
+                <!-- Lower -->
+                <span class="absolute bottom-1 left-1 bg-green-600 text-white text-[10px] px-2 py-0.5 rounded-md shadow">
+                    Best Lower-body
+                </span>
+                <img src="${normalizePath(lower.path)}" class="w-32 h-32 object-cover rounded-lg border-4 border-green-500 mt-1">
+                <p class="text-xs text-center text-green-600 font-bold mt-1">
+                    ✅ Outfit Combo
+                </p>
+            </div>
+        `;
+    } else {
+        // Fallback: display each separately (including full-body)
         topMatches.forEach(match => {
+            let label = match.detected_type || "unknown";
+            let recText = match.recommendation || "Top Match";
+            let similarity = match.similarity ? (match.similarity * 100).toFixed(1) : "N/A";
+            let path = match.path ? normalizePath(match.path) : "#";
+
             html += `
                 <div class="relative w-32">
                     <span class="absolute top-1 left-1 bg-green-600 text-white text-[10px] px-2 py-0.5 rounded-md shadow">
-                        ${match.detected_type === "upper" ? "Best Upper-body Match" : 
-                          match.detected_type === "lower" ? "Best Lower-body Match" : "Top Match"}
+                        ${label === "upper" ? "Best Upper-body" : label === "lower" ? "Best Lower-body" : "Top Match"}
                     </span>
-                    <img src="${normalizePath(match.path)}" 
-                         class="w-32 h-32 object-cover rounded-lg border-4 border-green-500 mb-2">
+                    <img src="${path}" class="w-32 h-32 object-cover rounded-lg border-4 border-green-500 mb-2">
                     <p class="text-xs text-center text-green-600 font-bold">
-                        ✅ ${match.recommendation || "No valid match"}
+                        ✅ ${recText}
                     </p>
                     <p class="text-[10px] text-gray-500 text-center">
-                        ${match.label} (${(match.similarity * 100).toFixed(1)}%)
+                        ${match.label || "unknown"} (${similarity}%)
                     </p>
                 </div>
             `;
         });
-
-        html += `</div></div>`;
     }
 
-    // ---------------------------
-    // UPLOADED ITEMS SECTION
-    // ---------------------------
-    if (data.items?.length > 0) {
-        if (selectedWardrobeType) {
-            html += `<p class="italic text-gray-600 mb-2">
-                        Note: Only ${selectedWardrobeType.toLowerCase()} items are displayed
-                     </p>`;
-        }
+    html += `</div></div>`;
+}
 
+    // ---------------------------
+    // Display Remaining Uploaded Items
+    // ---------------------------
+    if (uploadedItems.length > 0) {
         html += `
             <h4 class="text-md font-semibold text-gray-600 mb-2">Uploaded Items</h4>
             <div class="flex flex-wrap gap-3 mb-6 justify-center">
         `;
 
-        data.items.forEach(it => {
+        uploadedItems.forEach(it => {
             if (["accessory", "shoes"].includes(it.detected_type)) return;
+            if (topMatches.some(m => m.path === it.path)) return; // skip top matches
 
-            if (selectedWardrobeType &&
-                it.detected_type.toLowerCase() !== selectedWardrobeType.toLowerCase()) {
+            // Automatic mode: skip full-body if upper/lower exist
+            if (data.mode === "automatic" && it.detected_type === "full-body" && topMatches.some(m => m.detected_type !== "full-body")) {
                 return;
             }
 
-            // 🚫 Skip Top Matches
-            if (topMatches.some(m => m.path === it.path)) return;
+            // Categorize similarity
+            let categoryLabel = "";
+            if (it.similarity >= 0.6) categoryLabel = "Highly recommended";
+            else if (it.similarity >= 0.35) categoryLabel = "Moderate match";
+            else categoryLabel = "Weak match";
 
             html += `
-                <div class="w-32">
-                    <img src="${normalizePath(it.path)}" 
-                         class="w-32 h-32 object-cover rounded-lg border mb-2">
-                    <p class="text-xs text-center text-gray-600">
-                        ${it.recommendation || "❌ No valid match"}
-                    </p>
+                <div class="w-32 relative">
+                    <img src="${normalizePath(it.path)}" class="w-32 h-32 object-cover rounded-lg border mb-2">
                     <p class="text-[10px] text-gray-500 text-center">
-                        (${it.similarity ? (it.similarity * 100).toFixed(1) + "%" : "N/A"})
+                        ${it.label || "unknown"} (${it.similarity ? (it.similarity*100).toFixed(1) : "N/A"}%)
                     </p>
+                    <span class="absolute top-1 left-1 px-2 py-0.5 rounded-md text-[10px] font-semibold
+                        ${categoryLabel === "Highly recommended" ? "bg-green-600 text-white" :
+                          categoryLabel === "Moderate match" ? "bg-yellow-500 text-white" :
+                          "bg-gray-400 text-white"}">
+                        ${categoryLabel}
+                    </span>
                 </div>
             `;
         });
@@ -333,6 +398,7 @@ function renderLatestResult(data, selectedWardrobeType) {
 
     document.getElementById("latest-result").innerHTML = html;
 }
+
 
 
 

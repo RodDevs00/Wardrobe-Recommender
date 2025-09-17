@@ -119,13 +119,31 @@ $distinctStyles = $distinctStylesStmt->fetchAll(PDO::FETCH_COLUMN);
             </select>
         </form>
     </div>
-
-    <?php if ($history): ?>
+<?php if ($history): ?>
     <div class="grid md:grid-cols-2 gap-6">
         <?php foreach($history as $h): ?>
             <?php
                 $items = json_decode($h['items'], true) ?: [];
                 $top_match = json_decode($h['top_match'], true) ?: [];
+
+                // Determine actual top match paths for marking
+                $topMatchPaths = [];
+                if (!empty($top_match)) {
+                    if (isset($top_match['items']) && is_array($top_match['items'])) {
+                        foreach ($top_match['items'] as $tm) {
+                            $topMatchPaths[] = $tm['path'] ?? '';
+                        }
+                    } else {
+                        $topMatchPaths[] = $top_match['path'] ?? '';
+                    }
+                }
+
+                // Sort items: top match first
+                usort($items, function($a, $b) use ($topMatchPaths) {
+                    $aTop = in_array($a['path'] ?? '', $topMatchPaths);
+                    $bTop = in_array($b['path'] ?? '', $topMatchPaths);
+                    return $aTop === $bTop ? 0 : ($aTop ? -1 : 1);
+                });
             ?>
             <div class="bg-white shadow rounded-xl p-5 relative">
                 <!-- Delete Icon -->
@@ -137,49 +155,40 @@ $distinctStyles = $distinctStylesStmt->fetchAll(PDO::FETCH_COLUMN);
 
                 <h3 class="font-semibold text-gray-700 mb-1">
                     <?= htmlspecialchars(ucwords(str_replace("_"," ",$h['event']))) ?>
-                    <span class="text-sm text-gray-500">(<?= $h['mode'] ?>)</span>
+                    <span class="text-sm text-gray-500">(<?= htmlspecialchars($h['mode']) ?>)</span>
                 </h3>
-                <p class="text-xs text-gray-500 mb-3"><?= $h['created_at'] ?></p>
+                <p class="text-xs text-gray-500 mb-3"><?= htmlspecialchars($h['created_at']) ?></p>
 
                 <div class="flex flex-wrap gap-3 mb-3">
                     <?php foreach($items as $it): 
                         $imgPath = webPath($it['path'] ?? '');
                         if (!$imgPath) continue;
+
+                        $similarity = isset($it['similarity']) ? number_format(floatval($it['similarity'])*100, 2) : 0;
+                        $recommendation = $it['recommendation'] ?? '';
+                        $detected_type = $it['detected_type'] ?? '';
+                        $isTopMatch = in_array($it['path'], $topMatchPaths);
                     ?>
-                        <div class="w-28">
-                            <img src="<?= htmlspecialchars($imgPath) ?>" class="w-28 h-28 object-cover rounded-lg border">
-                            <p class="text-xs mt-1 text-center text-gray-600">
-                                <?= $h['mode'] === 'automatic' ? htmlspecialchars(ucfirst($it['detected_type'] ?? '')) . '<br>' : '' ?>
-                                <?= htmlspecialchars($it['recommendation'] ?? '') ?>
+                        <div class="w-28 relative">
+                            <img src="<?= htmlspecialchars($imgPath) ?>" class="w-28 h-28 object-cover rounded-lg border <?= $isTopMatch ? 'border-green-500' : 'border-gray-300' ?>">
+                            <?php if($isTopMatch): ?>
+                                <span class="absolute top-1 left-1 px-2 py-0.5 bg-green-600 text-white text-[10px] rounded-md font-semibold">Top Match</span>
+                            <?php endif; ?>
+                            <p class="text-xs mt-1 text-center <?= $isTopMatch ? 'text-green-700 font-semibold' : 'text-gray-600' ?>">
+                                <?= htmlspecialchars($detected_type ? ucfirst($detected_type) : '') ?><br>
+                                <?= htmlspecialchars($recommendation) ?><br>
+                                <?= $similarity ? htmlspecialchars($similarity).'%' : '' ?>
                             </p>
                         </div>
                     <?php endforeach; ?>
                 </div>
-
-                <?php if (!empty($top_match)): ?>
-                    <div>
-                        <?php
-                        if (isset($top_match['items']) && is_array($top_match['items'])) {
-                            foreach ($top_match['items'] as $tm) {
-                                $topImg = webPath($tm['path'] ?? '');
-                                if ($topImg) {
-                                    echo '<img src="'.htmlspecialchars($topImg).'" class="w-32 h-32 object-cover rounded-lg border mb-1">';
-                                    echo '<p class="text-sm text-gray-700"><span class="font-semibold">Top Match ('.htmlspecialchars($tm['detected_type']).'):</span> '.htmlspecialchars($tm['recommendation'] ?? 'N/A').'</p>';
-                                }
-                            }
-                        } else {
-                            $topImg = webPath($top_match['path'] ?? '');
-                            if ($topImg) {
-                                echo '<img src="'.htmlspecialchars($topImg).'" class="w-32 h-32 object-cover rounded-lg border mb-1">';
-                                echo '<p class="text-sm text-gray-700"><span class="font-semibold">Top Match:</span> '.htmlspecialchars($top_match['recommendation'] ?? 'N/A').'</p>';
-                            }
-                        }
-                        ?>
-                    </div>
-                <?php endif; ?>
             </div>
         <?php endforeach; ?>
     </div>
+
+
+
+
 
     <!-- Pagination -->
     <div class="mt-8 flex justify-center space-x-2">
