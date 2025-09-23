@@ -60,33 +60,33 @@ if(isset($_POST['login'])){
 <body class="min-h-screen flex flex-col">
 
 <!-- Navbar -->
-<nav class="bg-white shadow-lg px-6 py-4 flex justify-between items-center sticky top-0 z-50">
-    <div class="flex items-center space-x-4">
-        <a href="../index.php" class="flex items-center">
-            <img src="https://img.icons8.com/fluency/48/wardrobe.png" class="h-10 w-10" alt="StyleSense Logo">
-            <span class="text-2xl font-bold text-gray-900 tracking-tight ml-2">StyleSense</span>
-        </a>
-    </div>
-    <div class="flex items-center space-x-6 text-lg font-medium">
+<nav class="bg-white shadow-lg px-4 sm:px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+    <a href="../index.php" class="flex items-center">
+        <img src="https://img.icons8.com/fluency/48/wardrobe.png" class="h-10 w-10" alt="StyleSense Logo">
+        <span class="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight ml-2">StyleSense</span>
+    </a>
+    <div class="flex items-center space-x-4 sm:space-x-6 text-sm sm:text-lg font-medium">
         <?php if ($is_logged_in): ?>
             <a href="../profile.php" class="navbar-link transition-colors duration-200">Profile</a>
             <a href="../auth/logout.php" class="text-red-500 hover:text-red-700 transition-colors duration-200">Logout</a>
         <?php else: ?>
-            <a href="register.php" class="text-black-600 hover:text-green-800 transition-colors duration-200">Register</a>
+            <a href="register.php" class="text-gray-700 hover:text-indigo-600 transition-colors duration-200">Register</a>
         <?php endif; ?>
     </div>
 </nav>
 
-
-<!-- Login Card -->
-<div class="flex-1 flex items-center justify-center">
-  <div class="w-full max-w-md bg-white rounded-3xl p-8 shadow-lg login-card my-12">
+<!-- Login Section -->
+<main class="flex-1 flex items-center justify-center px-4 sm:px-6 py-12">
+  <div class="w-full max-w-md bg-white rounded-2xl p-8 shadow-lg login-card">
+    
+    <!-- Logo + Title -->
     <div class="text-center mb-6">
       <img src="https://img.icons8.com/fluency/48/wardrobe.png" class="mx-auto mb-4" alt="StyleSense Logo">
-      <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">StyleSense</h1>
+      <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">StyleSense</h1>
       <p class="text-gray-500 mt-1 text-sm">Sign in to your account</p>
     </div>
 
+    <!-- Error -->
     <?php if(isset($error)): ?>
       <div class="mb-4 p-3 rounded-md bg-red-100 text-red-700 text-sm flex items-center">
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -96,17 +96,18 @@ if(isset($_POST['login'])){
       </div>
     <?php endif; ?>
 
+    <!-- Form -->
     <form method="POST" class="space-y-5">
       <div>
         <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
         <input type="text" name="username" id="username" placeholder="Enter your username" required
-          class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+          class="w-full px-4 py-2 border rounded-xl text-sm sm:text-base">
       </div>
 
       <div>
         <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
         <input type="password" name="password" id="password" placeholder="Enter your password" required
-          class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+          class="w-full px-4 py-2 border rounded-xl text-sm sm:text-base">
       </div>
 
       <button type="submit" name="login"
@@ -115,12 +116,13 @@ if(isset($_POST['login'])){
       </button>
     </form>
 
+    <!-- Footer -->
     <p class="mt-6 text-center text-sm text-gray-600">
-      Don't have an account?
+      Don’t have an account?
       <a href="register.php" class="text-indigo-600 hover:text-indigo-800 font-medium transition">Register</a>
     </p>
   </div>
-</div>
+</main>
 
 </body>
 </html>

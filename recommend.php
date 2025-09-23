@@ -15,6 +15,19 @@ function webPath(string $path): string {
     $projectFolder = basename(dirname(__FILE__));
     return '/' . $projectFolder . '/' . ltrim($path, '/');
 }
+// function webPath(string $path): string {
+//     if (!$path) return '';
+//     $path = str_replace(['\\\\', '\\'], '/', $path);
+
+//     // Strip leading "../" or "./"
+//     $path = preg_replace('#^(\.\./|\.\/)#', '', $path);
+
+//     // Always serve from /uploads/
+//     if (strpos($path, 'uploads/') === 0) {
+//         return '/' . $path;
+//     }
+//     return '/uploads/' . ltrim($path, '/');
+// }
 
 $user_id = $_SESSION['user_id'];
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
@@ -64,28 +77,51 @@ $distinctStyles = $distinctStylesStmt->fetchAll(PDO::FETCH_COLUMN);
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>AI Wardrobe - Recommendations</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stylesense - Recommendations</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+
 <body class="bg-gray-100 min-h-screen">
 
-<nav class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-    <!-- Logo & Title -->
-    <div class="flex items-center space-x-3">
-        <img src="https://img.icons8.com/color/48/wardrobe.png" class="h-8 w-8" alt="AI Wardrobe Logo">
-        <span class="text-xl font-bold text-gray-800">AI Wardrobe</span>
-    </div>
+<nav class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex justify-between items-center relative">
+  <!-- Logo & Title -->
+  <div class="flex items-center space-x-3">
+      <img src="https://img.icons8.com/color/48/wardrobe.png" class="h-8 w-8" alt="AI Wardrobe Logo">
+      <span class="text-xl font-bold text-gray-800">Stylesense</span>
+  </div>
 
-    <!-- Navigation Links -->
-    <div class="flex space-x-6">
-        <a href="home.php" class="text-gray-600 font-semibold transition-colors duration-200 hover:text-blue-800">Home</a>
-        <a href="recommend.php" class="text-blue-600 font-medium transition-colors duration-200 hover:text-blue-600">Recommendations</a>
-        <a href="profile.php" class="text-gray-600 font-medium transition-colors duration-200 hover:text-blue-600">Profile</a>
-        <a href="auth/logout.php" class="text-red-500 font-medium transition-colors duration-200 hover:text-red-700">Logout</a>
-    </div>
+  <!-- Desktop Menu -->
+  <div class="hidden md:flex space-x-6">
+      <a href="home.php" class="text-gray-600 font-semibold hover:text-blue-800">Home</a>
+      <a href="recommend.php" class="text-blue-600 font-semibold hover:text-blue-600">Recommendations</a>
+      <a href="profile.php" class="text-gray-600 font-medium hover:text-blue-600">Profile</a>
+      <a href="auth/logout.php" class="text-red-500 font-medium hover:text-red-700">Logout</a>
+  </div>
+
+  <!-- Burger Button -->
+  <button id="menu-toggle" class="md:hidden text-gray-700 focus:outline-none">
+      <!-- default burger icon -->
+      <svg id="burger-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+      <!-- close (X) icon -->
+      <svg id="close-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+  </button>
+
+  <!-- Mobile Menu -->
+  <div id="mobile-menu" class="absolute top-full left-0 w-full bg-gray-50 border-b border-gray-200 hidden flex-col space-y-2 px-6 py-4 transition-all duration-300 ease-in-out">
+      <a href="home.php" class="block text-gray-600 font-semibold hover:text-blue-800">Home</a>
+      <a href="recommend.php" class="block text-blue-600 font-semibold hover:text-blue-600">Recommendations</a>
+      <a href="profile.php" class="block text-gray-600 hover:text-blue-600">Profile</a>
+      <a href="auth/logout.php" class="block text-red-500 hover:text-red-700">Logout</a>
+  </div>
 </nav>
+
 
 
 <div class="max-w-5xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
@@ -191,12 +227,55 @@ $distinctStyles = $distinctStylesStmt->fetchAll(PDO::FETCH_COLUMN);
 
 
     <!-- Pagination -->
-    <div class="mt-8 flex justify-center space-x-2">
-        <?php for($i=1; $i<=$total_pages; $i++): ?>
-            <a href="?page=<?= $i ?>&search=<?= htmlspecialchars($searchQuery) ?>&event=<?= htmlspecialchars($filterEvent) ?>&style=<?= htmlspecialchars($filterStyle) ?>&mode=<?= htmlspecialchars($filterMode) ?>"
-               class="px-4 py-2 rounded-md <?= $page==$i ? 'bg-blue-600 text-white':'bg-gray-200 text-gray-700 hover:bg-gray-300' ?>"><?= $i ?></a>
-        <?php endfor; ?>
-    </div>
+<div class="mt-8 flex justify-center space-x-2">
+    <?php
+    $range = 2; // how many numbers to show around current page
+    ?>
+
+    <!-- Prev button -->
+    <?php if ($page > 1): ?>
+        <a href="?page=<?= $page-1 ?>&search=<?= htmlspecialchars($searchQuery) ?>&event=<?= htmlspecialchars($filterEvent) ?>&style=<?= htmlspecialchars($filterStyle) ?>&mode=<?= htmlspecialchars($filterMode) ?>"
+           class="px-3 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm">Prev</a>
+    <?php else: ?>
+        <span class="px-3 py-2 rounded-md bg-gray-100 text-gray-400 text-sm cursor-not-allowed">Prev</span>
+    <?php endif; ?>
+
+    <!-- First page -->
+    <?php if ($page > $range + 1): ?>
+        <a href="?page=1&search=<?= htmlspecialchars($searchQuery) ?>&event=<?= htmlspecialchars($filterEvent) ?>&style=<?= htmlspecialchars($filterStyle) ?>&mode=<?= htmlspecialchars($filterMode) ?>"
+           class="px-3 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm">1</a>
+        <?php if ($page > $range + 2): ?>
+            <span class="px-2 py-2 text-gray-500 text-sm">...</span>
+        <?php endif; ?>
+    <?php endif; ?>
+
+    <!-- Page numbers around current -->
+    <?php for ($i = max(1, $page - $range); $i <= min($total_pages, $page + $range); $i++): ?>
+        <a href="?page=<?= $i ?>&search=<?= htmlspecialchars($searchQuery) ?>&event=<?= htmlspecialchars($filterEvent) ?>&style=<?= htmlspecialchars($filterStyle) ?>&mode=<?= htmlspecialchars($filterMode) ?>"
+           class="px-3 py-2 rounded-md text-sm <?= $page == $i ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' ?>">
+           <?= $i ?>
+        </a>
+    <?php endfor; ?>
+
+    <!-- Last page -->
+    <?php if ($page < $total_pages - $range): ?>
+        <?php if ($page < $total_pages - $range - 1): ?>
+            <span class="px-2 py-2 text-gray-500 text-sm">...</span>
+        <?php endif; ?>
+        <a href="?page=<?= $total_pages ?>&search=<?= htmlspecialchars($searchQuery) ?>&event=<?= htmlspecialchars($filterEvent) ?>&style=<?= htmlspecialchars($filterStyle) ?>&mode=<?= htmlspecialchars($filterMode) ?>"
+           class="px-3 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm"><?= $total_pages ?></a>
+    <?php endif; ?>
+
+    <!-- Next button -->
+    <?php if ($page < $total_pages): ?>
+        <a href="?page=<?= $page+1 ?>&search=<?= htmlspecialchars($searchQuery) ?>&event=<?= htmlspecialchars($filterEvent) ?>&style=<?= htmlspecialchars($filterStyle) ?>&mode=<?= htmlspecialchars($filterMode) ?>"
+           class="px-3 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm">Next</a>
+    <?php else: ?>
+        <span class="px-3 py-2 rounded-md bg-gray-100 text-gray-400 text-sm cursor-not-allowed">Next</span>
+    <?php endif; ?>
+</div>
+
+
 
     <?php else: ?>
         <p class="text-gray-500 text-center">No recommendations found matching your criteria.</p>
@@ -255,6 +334,22 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle mobile menu
+    const toggleBtn = document.getElementById('menu-toggle');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const burgerIcon = document.getElementById('burger-icon');
+    const closeIcon = document.getElementById('close-icon');
+
+    toggleBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+        burgerIcon.classList.toggle('hidden');
+        closeIcon.classList.toggle('hidden');
+    });
+});
+</script>
+
 
 </body>
 </html>

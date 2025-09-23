@@ -78,7 +78,10 @@ GLOBAL_BLACKLIST = ["bra-panty-set", "swimsuit"]
 MISCLASS_CORRECTIONS = {
     "suit": ["bra-panty-set", "swimsuit"],
     "skirt": ["gown", "dress"],
-    "shirt": ["tank-top"]
+    "shirt": ["tank-top","bra-panty-set", "swimsuit"],
+    "t-shirt": ["tank-top","bra-panty-set", "swimsuit"],
+    "blouse": ["tank-top","bra-panty-set", "swimsuit"],
+    "crop-top": ["bra-panty-set", "swimsuit"]
 }
 # =========================
 # Style-aware look-alike corrections
@@ -201,10 +204,10 @@ def recommend(mode):
             "similarity": similarity
         })
 
-    # =========================
+   # =========================
     # Recommendation Logic
     # =========================
-    SIMILARITY_THRESHOLD = 0.25
+    SIMILARITY_THRESHOLD = 0.25 # Minimum similarity to consider
     top_match, best_upper, best_lower = None, None, None
 
     if items:
@@ -214,28 +217,40 @@ def recommend(mode):
             if mode == "manual":
                 candidate = max(valid_items, key=lambda x: x["similarity"])
                 top_match = {**candidate, "recommendation": f"✅ Best {wardrobe_type} match for {event.replace('_',' ')}"}
-            else:
+            else:  # automatic mode
                 upper_items = [i for i in valid_items if i["detected_type"] == "upper"]
                 lower_items = [i for i in valid_items if i["detected_type"] == "lower"]
                 full_items = [i for i in valid_items if i["detected_type"] == "full-body"]
 
                 best_upper = max(upper_items, key=lambda x: x["similarity"]) if upper_items else None
                 best_lower = max(lower_items, key=lambda x: x["similarity"]) if lower_items else None
-                best_full = max(full_items, key=lambda x: x["similarity"]) if full_items else None
+                best_full  = max(full_items, key=lambda x: x["similarity"]) if full_items else None
 
-                # Full-body priority
-                if best_full and (not best_upper and not best_lower or best_full["similarity"] >= max(
-                    (best_upper["similarity"] if best_upper else 0),
-                    (best_lower["similarity"] if best_lower else 0)
-                )):
+               # ✅ Full-body allowed on its own ONLY if no upper and no lower
+                if best_full and (
+                    (not best_upper and not best_lower) or
+                    (
+                        best_upper and best_lower and
+                        best_full["similarity"] >= max(best_upper["similarity"], best_lower["similarity"])
+                    )
+                ):
                     top_match = best_full
                     top_match["recommendation"] = f"👗 Best full-body match for {event.replace('_',' ')}"
                     best_upper = best_lower = None
                 else:
-                    if best_upper:
+                    # ✅ Require both upper & lower for automatic
+                    if best_upper and best_lower:
                         best_upper["recommendation"] = f"👕 Best upper-body match for {event.replace('_',' ')}"
-                    if best_lower:
                         best_lower["recommendation"] = f"👖 Best lower-body match for {event.replace('_',' ')}"
+                        # Pick the stronger one as top
+                        if best_upper["similarity"] >= best_lower["similarity"]:
+                            top_match = best_upper
+                        else:
+                            top_match = best_lower
+                    else:
+                        # ❌ If only upper OR only lower → no recommendation
+                        top_match = {"recommendation": "❌ No recommendation"}
+
 
     return jsonify({
         "mode": mode,

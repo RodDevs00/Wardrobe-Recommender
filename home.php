@@ -17,7 +17,8 @@ $latest = $history_stmt->fetch();
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>AI Wardrobe - Recommendation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stylesense - Recommendation</title>
     <style>
     .loader {
         width: 50px;
@@ -33,42 +34,64 @@ $latest = $history_stmt->fetch();
     </style>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen">
-<nav class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+<!-- Navbar -->
+<nav class="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+    <!-- Left: Logo -->
     <div class="flex items-center space-x-3">
         <img src="https://img.icons8.com/color/48/wardrobe.png" class="h-8 w-8" alt="AI Wardrobe Logo">
-        <span class="text-xl font-bold text-gray-800">AI Wardrobe</span>
+        <span class="text-lg sm:text-xl font-bold text-gray-800">Stylesense</span>
     </div>
-    <div class="flex space-x-6">
+
+    <!-- Mobile Hamburger -->
+    <button class="md:hidden text-gray-700 focus:outline-none" id="menu-toggle">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+    </button>
+
+    <!-- Desktop Menu -->
+    <div class="hidden md:flex space-x-6 text-sm sm:text-base font-medium" id="menu">
         <a href="index.php" class="text-blue-600 font-semibold hover:text-blue-800">Home</a>
-        <a href="recommend.php" class="text-gray-600 font-medium hover:text-blue-600">Recommendations</a>
-        <a href="profile.php" class="text-gray-600 font-medium hover:text-blue-600">Profile</a>
-        <a href="auth/logout.php" class="text-red-500 font-medium hover:text-red-700">Logout</a>
+        <a href="recommend.php" class="text-gray-600 hover:text-blue-600">Recommendations</a>
+        <a href="profile.php" class="text-gray-600 hover:text-blue-600">Profile</a>
+        <a href="auth/logout.php" class="text-red-500 hover:text-red-700">Logout</a>
     </div>
 </nav>
 
-<div class="flex justify-center py-10 px-6">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-6xl">
+<!-- Mobile Menu -->
+<div id="mobile-menu" class="md:hidden hidden flex-col space-y-2 px-4 pb-4 border-b border-gray-200 bg-gray-50 transition-all duration-300 ease-in-out">
+    <a href="index.php" class="block text-blue-600 font-semibold hover:text-blue-800">Home</a>
+    <a href="recommend.php" class="block text-gray-600 hover:text-blue-600">Recommendations</a>
+    <a href="profile.php" class="block text-gray-600 hover:text-blue-600">Profile</a>
+    <a href="auth/logout.php" class="block text-red-500 hover:text-red-700">Logout</a>
+</div>
+
+
+<!-- Main Content -->
+<div class="flex-1 flex justify-center py-8 px-4 sm:px-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-6xl">
 
         <!-- Card 1: Forms -->
-        <div class="bg-white shadow-lg rounded-2xl p-8">
-            <h2 class="text-2xl font-bold mb-6 text-center text-gray-700">Get Your AI Recommendation</h2>
+        <div class="bg-white shadow-lg rounded-2xl p-6 sm:p-8">
+            <h2 class="text-xl sm:text-2xl font-bold mb-6 text-center text-gray-700">Get Your AI Recommendation</h2>
 
-            <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-3 rounded mb-4 text-sm">
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-3 rounded mb-4 text-xs sm:text-sm">
                 ⚠️ Note: Accessories and shoes are excluded. Only upper, lower, or full-body wardrobe items are used.
             </div>
 
             <!-- Tabs -->
-            <ul class="flex border-b mb-4 justify-center">
+            <ul class="flex border-b mb-4 justify-center text-sm sm:text-base">
                 <li class="mr-2">
                     <button type="button" onclick="showTab('manual')" id="tab-manual"
-                        class="py-2 px-6 font-semibold text-blue-600 border-b-2 border-blue-600">
+                        class="py-2 px-4 sm:px-6 font-semibold text-blue-600 border-b-2 border-blue-600">
                         Manual
                     </button>
                 </li>
                 <li>
                     <button type="button" onclick="showTab('automatic')" id="tab-automatic"
-                        class="py-2 px-6 font-semibold text-gray-500 hover:text-blue-600">
+                        class="py-2 px-4 sm:px-6 font-semibold text-gray-500 hover:text-blue-600">
                         Automatic
                     </button>
                 </li>
@@ -80,8 +103,8 @@ $latest = $history_stmt->fetch();
                     <input type="hidden" name="mode" value="manual">
 
                     <div>
-                        <label class="block font-medium">Event</label>
-                        <select name="event" class="w-full border rounded p-2" required>
+                        <label class="block font-medium text-gray-700">Event</label>
+                        <select name="event" class="w-full border rounded p-2 text-sm sm:text-base" required>
                             <option value="wedding">Wedding</option>
                             <option value="beach_party">Beach Party</option>
                             <option value="birthday">Birthday</option>
@@ -89,8 +112,8 @@ $latest = $history_stmt->fetch();
                     </div>
 
                     <div>
-                        <label class="block font-medium text-gray-600">Wardrobe Type</label>
-                        <select name="wardrobe_type" class="w-full border p-2 rounded-md" required>
+                        <label class="block font-medium text-gray-700">Wardrobe Type</label>
+                        <select name="wardrobe_type" class="w-full border p-2 rounded-md text-sm sm:text-base" required>
                             <option value="upper">Upper</option>
                             <option value="lower">Lower</option>
                             <option value="full-body">Full Body</option>
@@ -98,23 +121,21 @@ $latest = $history_stmt->fetch();
                     </div>
 
                     <div>
-                        <label class="block font-medium text-gray-600">Style Preference</label>
-                        <select name="style" class="w-full border p-2 rounded-md" required>
+                        <label class="block font-medium text-gray-700">Style Preference</label>
+                        <select name="style" class="w-full border p-2 rounded-md text-sm sm:text-base" required>
                             <option value="feminine">Feminine</option>
                             <option value="masculine">Masculine</option>
-                            <option value="androgynous">Androgynous</option>
-                            <option value="gender_neutral">Gender Neutral</option>
                             <option value="no_preference">No Preference</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block font-medium text-gray-600">Upload up to 5 images</label>
+                        <label class="block font-medium text-gray-700">Upload up to 5 images</label>
                         <input type="file" name="images[]" accept="image/*" multiple required 
-                            class="w-full" onchange="previewImages(event, 'manual-preview')">
+                            class="w-full text-sm sm:text-base" onchange="previewImages(event, 'manual-preview')">
                         <div id="manual-preview" class="flex flex-wrap gap-2 mt-2"></div>
                     </div>
 
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 text-sm sm:text-base">
                         Get Recommendation
                     </button>
                 </form>
@@ -126,8 +147,8 @@ $latest = $history_stmt->fetch();
                     <input type="hidden" name="mode" value="automatic">
 
                     <div>
-                        <label class="block font-medium">Event</label>
-                        <select name="event" class="w-full border rounded p-2" required>
+                        <label class="block font-medium text-gray-700">Event</label>
+                        <select name="event" class="w-full border rounded p-2 text-sm sm:text-base" required>
                             <option value="wedding">Wedding</option>
                             <option value="beach_party">Beach Party</option>
                             <option value="birthday">Birthday</option>
@@ -135,24 +156,22 @@ $latest = $history_stmt->fetch();
                     </div>
 
                     <div>
-                        <label class="block font-medium text-gray-600">Style Preference</label>
-                        <select name="style" class="w-full border p-2 rounded-md" required>
+                        <label class="block font-medium text-gray-700">Style Preference</label>
+                        <select name="style" class="w-full border p-2 rounded-md text-sm sm:text-base" required>
                             <option value="feminine">Feminine</option>
                             <option value="masculine">Masculine</option>
-                            <option value="androgynous">Androgynous</option>
-                            <option value="gender_neutral">Gender Neutral</option>
                             <option value="no_preference">No Preference</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="block font-medium text-gray-600">Upload up to 10 images</label>
+                        <label class="block font-medium text-gray-700">Upload up to 10 images</label>
                         <input type="file" name="images[]" accept="image/*" multiple required 
-                            class="w-full" onchange="previewImages(event, 'auto-preview')">
+                            class="w-full text-sm sm:text-base" onchange="previewImages(event, 'auto-preview')">
                         <div id="auto-preview" class="flex flex-wrap gap-2 mt-2"></div>
                     </div>
 
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 text-sm sm:text-base">
                         Get Recommendation
                     </button>
                 </form>
@@ -160,8 +179,8 @@ $latest = $history_stmt->fetch();
         </div>
 
         <!-- Card 2: Result -->
-        <div class="bg-white shadow-lg rounded-2xl p-8">
-            <h2 class="text-2xl font-bold mb-6 text-center text-gray-700">Latest Result</h2>
+        <div class="bg-white shadow-lg rounded-2xl p-6 sm:p-8">
+            <h2 class="text-xl sm:text-2xl font-bold mb-6 text-center text-gray-700">Latest Result</h2>
             <div id="latest-result">
                 <p class="text-gray-500 text-center">No recommendations yet.</p>
             </div>
@@ -171,6 +190,12 @@ $latest = $history_stmt->fetch();
 </div>
 
 <script>
+
+document.getElementById("menu-toggle").addEventListener("click", () => {
+    const mobileMenu = document.getElementById("mobile-menu");
+    mobileMenu.classList.toggle("hidden");
+});
+
 function showTab(tab) {
     document.querySelectorAll('.tab-content').forEach(div => div.classList.add('hidden'));
     document.getElementById(tab).classList.remove('hidden');
@@ -188,6 +213,16 @@ function previewImages(event, previewId) {
     container.innerHTML = ""; 
     const files = event.target.files;
     if (!files) return;
+
+    // detect mode from previewId
+    const maxFiles = previewId.includes("manual") ? 5 : 10;
+
+    if (files.length > maxFiles) {
+        alert(`❌ You can only upload up to ${maxFiles} images in ${previewId.includes("manual") ? "manual" : "automatic"} mode.`);
+        event.target.value = ""; // reset input
+        return;
+    }
+
     [...files].forEach(file => {
         if (file.type.startsWith("image/")) {
             const reader = new FileReader();
@@ -202,6 +237,7 @@ function previewImages(event, previewId) {
     });
 }
 
+
 async function submitForm(formId) {
     const form = document.getElementById(formId);
     const formData = new FormData(form);
@@ -209,13 +245,12 @@ async function submitForm(formId) {
 
     resultDiv.innerHTML = `
         <div class="flex flex-col items-center justify-center py-10">
-    <div class="loader mb-3"></div>
-    <p class="text-gray-500 text-center text-sm">AI is thinking...</p>
-    <p class="text-gray-400 text-center text-xs mt-2">
-        💡 Note: AI will just recommend the nearest match based on your uploaded wardrobe.
-    </p>
-</div>
-
+            <div class="loader mb-3"></div>
+            <p class="text-gray-500 text-center text-sm">AI is thinking...</p>
+            <p class="text-gray-400 text-center text-xs mt-2">
+                💡 Note: AI will just recommend the nearest match based on your uploaded wardrobe.
+            </p>
+        </div>
     `;
 
     try {
@@ -230,6 +265,7 @@ async function submitForm(formId) {
         resultDiv.innerHTML = `<p class='text-red-500 text-center'>⚠️ Error: ${err.message}</p>`;
     }
 }
+
 function renderLatestResult(data) {
     // Safely handle undefined event
     let eventName = data.event ? data.event.replace("_", " ") : "Unknown event";
@@ -283,11 +319,34 @@ function renderLatestResult(data) {
             if (bestLower) topMatches.push(bestLower);
         }
 
-        // Fallback: pick highest similarity if nothing selected
-        if (topMatches.length === 0 && uploadedItems.length > 0) {
-            const highest = uploadedItems.reduce((prev, curr) => curr.similarity > prev.similarity ? curr : prev);
-            topMatches.push(highest);
-        }
+       
+}
+ // // Fallback: pick highest similarity if nothing selected
+        // if (topMatches.length === 0 && uploadedItems.length > 0) {
+        //     const highest = uploadedItems.reduce((prev, curr) => curr.similarity > prev.similarity ? curr : prev);
+        //     topMatches.push(highest);
+        // }
+        if (data.top_match && data.top_match.recommendation === "❌ No recommendation") {
+
+             if (data.mode === "automatic") {
+    html += `
+        <div class="mb-8 p-4 border-2 border-red-400 rounded-lg bg-red-50 shadow-sm text-center">
+            <h4 class="text-md font-semibold text-red-700 mb-2">❌ No Recommendation</h4>
+            <p class="text-sm text-gray-600">Please upload both upper and lower items, or a full-body outfit.</p>
+        </div>
+    `; 
+}
+else{
+    html += `
+        <div class="mb-8 p-4 border-2 border-red-400 rounded-lg bg-red-50 shadow-sm text-center">
+            <h4 class="text-md font-semibold text-red-700 mb-2">❌ No Recommendation</h4>
+            <p class="text-sm text-gray-600">Please upload more wardrobe items for better recommendations.</p>
+        </div>
+    `;
+}
+    document.getElementById("latest-result").innerHTML = html;
+    return; // ⛔ stop here, don’t show any fake "top match"
+
     }
 
    // ---------------------------
