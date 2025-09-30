@@ -17,6 +17,8 @@ function normalizePath($path) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $mode = $_POST['mode'] ?? null;
     $event = trim($_POST['event'] ?? "");
+    $motif = trim($_POST['motif'] ?? "");
+    $palette = trim($_POST['palette'] ?? "");
     $wardrobe_type = $_POST['wardrobe_type'] ?? null;
     $style = $_POST['style'] ?? "no_preference";
     $user_id = $_SESSION['user_id'];
@@ -76,7 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $post_fields = [
         "event" => $event,
-        "style" => $style
+        "style" => $style,
+        "motif" => $motif,
+        "palette" => $palette
     ];
     if ($mode === "manual" && $wardrobe_type) {
         $post_fields["wardrobe_type"] = $wardrobe_type;
@@ -135,21 +139,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ==============================
     // 4. Save history in DB
     // ==============================
-    $stmt = $pdo->prepare("
-        INSERT INTO ootd_history 
-        (user_id, event, mode, wardrobe_type, style, items, top_match, full_response, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+   $stmt = $pdo->prepare("
+    INSERT INTO ootd_history 
+    (user_id, event, mode, wardrobe_type, style, motif, palette, items, top_match, full_response, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     ");
-    $stmt->execute([
-        $user_id,
-        $event,
-        $mode,
-        $wardrobe_type,
-        $style,
-        json_encode($items),
-        json_encode($top_match),
-        json_encode($result)
-    ]);
+
+$stmt->execute([
+    $user_id,
+    $event,
+    $mode,
+    $wardrobe_type,
+    $style,
+    json_encode($motif) ?: null,
+    json_encode($palette) ?: null,
+    json_encode($items),
+    json_encode($top_match),
+    json_encode($result)
+]);
+
 
     // ==============================
     // 5. Respond with JSON
@@ -159,6 +167,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         "event" => ucwords(str_replace("_", " ", $event)),
         "mode" => $mode,
         "style" => $style,
+        "motif" => $motif,
+        "palette" => $palette,
         "wardrobe_type" => $wardrobe_type,
         "items" => $items,
         "top_match" => $top_match,
@@ -169,4 +179,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 } else {
     echo json_encode(["success" => false, "error" => "Invalid request"]);
     exit;
-}
+}   

@@ -3,27 +3,34 @@ session_start();
 require_once "../db.php";
 $is_logged_in = isset($_SESSION['user_id']);
 
-if(isset($_POST['register'])){
+$register_success = false;
+$register_error = "";
+
+if (isset($_POST['register'])) {
     $username = $_POST['username'];
+    $full_name = $_POST['full_name'];
     $email = $_POST['email'];
+     $contact = $_POST['contact'];
     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    $age = !empty($_POST['age']) ? $_POST['age'] : null;
+    $gender = !empty($_POST['gender']) ? $_POST['gender'] : null;
 
     // Check if username/email exists
     $stmt = $pdo->prepare("SELECT * FROM users WHERE username=? OR email=?");
     $stmt->execute([$username, $email]);
-    if($stmt->rowCount() > 0){
-        $error = "Username or email already exists!";
+
+    if ($stmt->rowCount() > 0) {
+        $register_error = "Username or email already exists!";
     } else {
-        $stmt = $pdo->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
-        if($stmt->execute([$username, $email, $password])){
-            $_SESSION['success'] = "Registration successful! You can login now.";
-            header("Location: login.php");
-            exit;
+        $stmt = $pdo->prepare("INSERT INTO users (username, full_name, email,contact, password, age, gender) VALUES (?, ?,?, ?, ?, ?, ?)");
+        if ($stmt->execute([$username, $full_name, $email,$contact, $password, $age, $gender])) {
+            $register_success = true;
         } else {
-            $error = "Registration failed!";
+            $register_error = "Registration failed!";
         }
     }
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -33,6 +40,7 @@ if(isset($_POST['register'])){
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Register - StyleSense</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     body {
       background: linear-gradient(135deg, #f3f4f6, #ffffff, #e5e7eb);
@@ -81,7 +89,6 @@ if(isset($_POST['register'])){
     </div>
 </nav>
 
-
 <!-- Registration Card -->
 <div class="flex-1 flex items-center justify-center">
   <div class="w-full max-w-md bg-white rounded-3xl p-8 shadow-lg card my-12">
@@ -91,39 +98,141 @@ if(isset($_POST['register'])){
       <p class="text-gray-500 mt-1 text-sm">Create your account</p>
     </div>
 
-    <?php if(isset($error)): ?>
-      <div class="mb-4 p-3 rounded-md bg-red-100 text-red-700 text-sm flex items-center">
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728"/>
-        </svg>
-        <?php echo $error; ?>
-      </div>
-    <?php endif; ?>
+    <form method="POST" id="registerForm" class="space-y-5">
+  <div>
+    <label for="full_name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+    <input type="text" name="full_name" id="full_name" placeholder="Your full name" required
+      class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+  </div>
 
-    <form method="POST" class="space-y-5">
-      <div>
-        <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-        <input type="text" name="username" id="username" placeholder="Choose a username" required
-          class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-      </div>
+  <div>
+    <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+    <input type="text" name="username" id="username" placeholder="Choose a username" required minlength="4"
+      class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+  </div>
 
-      <div>
-        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-        <input type="email" name="email" id="email" placeholder="Enter your email" required
-          class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-      </div>
+  <div>
+    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+    <input type="email" name="email" id="email" placeholder="Enter your email" required
+      class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+  </div>
 
-      <div>
-        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-        <input type="password" name="password" id="password" placeholder="Create a password" required
-          class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-      </div>
+   <div>
+  <label for="contact" class="block text-sm font-medium text-gray-700 mb-1">Contact No:</label>
+  <input type="text" name="contact" id="contact"
+    placeholder="09XXXXXXXXX or +639XXXXXXXXX" required
+    pattern="^(09\d{9}|(\+639)\d{9})$"
+    class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+</div>
 
-      <button type="submit" name="register"
-        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow-md transition transform hover:-translate-y-1">
-        Register
-      </button>
-    </form>
+
+  <div>
+    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+    <input type="password" name="password" id="password" placeholder="Create a password" required minlength="6"
+      class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+    <small class="text-gray-500">At least 6 characters</small>
+  </div>
+
+  <div>
+    <label for="confirm_password" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+    <input type="password" id="confirm_password" placeholder="Re-enter password" required
+      class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+  </div>
+
+  <div>
+    <label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+    <input type="number" name="age" id="age" min="13" max="100" placeholder="Your age"
+      class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+  </div>
+
+  <div>
+    <label for="gender" class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+    <select name="gender" id="gender" required
+      class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+      <option value="">Select gender</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+      <option value="Other">Other</option>
+    </select>
+  </div>
+
+  <button type="submit" name="register"
+    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow-md transition transform hover:-translate-y-1">
+    Register
+  </button>
+</form>
+
+<script>
+document.getElementById("registerForm").addEventListener("submit", function(e) {
+  let fullName = document.getElementById("full_name").value.trim();
+  let username = document.getElementById("username").value.trim();
+  let email = document.getElementById("email").value.trim();
+  let contact = document.getElementById("contact").value.trim();
+  let password = document.getElementById("password").value;
+  let confirmPassword = document.getElementById("confirm_password").value;
+  let age = document.getElementById("age").value;
+  let gender = document.getElementById("gender").value;
+
+  // Full name check
+  if (fullName.length < 3) {
+    e.preventDefault();
+    Swal.fire("Validation Error", "Full name must be at least 3 characters long.", "warning");
+    return;
+  }
+
+  // Username check
+  if (username.length < 4) {
+    e.preventDefault();
+    Swal.fire("Validation Error", "Username must be at least 4 characters long.", "warning");
+    return;
+  }
+
+  // Email check
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    e.preventDefault();
+    Swal.fire("Validation Error", "Please enter a valid email address.", "warning");
+    return;
+  }
+
+  // Contact check
+ const contactRegex = /^(09\d{9}|(\+639)\d{9})$/; // Philippine mobile number format
+if (!contactRegex.test(contact)) {
+  e.preventDefault();
+  Swal.fire("Validation Error", "Please enter a valid Philippine mobile number (e.g., 09XXXXXXXXX or +639XXXXXXXXX).", "warning");
+  return;
+}
+
+  // Password check
+  if (password.length < 6) {
+    e.preventDefault();
+    Swal.fire("Validation Error", "Password must be at least 6 characters long.", "warning");
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    e.preventDefault();
+    Swal.fire("Validation Error", "Passwords do not match.", "warning");
+    return;
+  }
+
+  // Age check (optional field, but validate if filled)
+  if (age && (age < 13 || age > 100)) {
+    e.preventDefault();
+    Swal.fire("Validation Error", "Age must be between 13 and 100.", "warning");
+    return;
+  }
+
+  // Gender check
+  if (gender === "") {
+    e.preventDefault();
+    Swal.fire("Validation Error", "Please select your gender.", "warning");
+    return;
+  }
+});
+</script>
+
+
 
     <p class="mt-6 text-center text-sm text-gray-600">
       Already have an account?
@@ -131,6 +240,32 @@ if(isset($_POST['register'])){
     </p>
   </div>
 </div>
+
+<!-- SweetAlert -->
+<?php if ($register_success): ?>
+<script>
+Swal.fire({
+  title: "Registration Successful 🎉",
+  text: "You can now login with your account.",
+  icon: "success",
+  timer: 2000,
+  showConfirmButton: false
+}).then(() => {
+  window.location.href = "login.php";
+});
+</script>
+<?php endif; ?>
+
+<?php if (!empty($register_error)): ?>
+<script>
+Swal.fire({
+  title: "Registration Failed ❌",
+  text: "<?php echo $register_error; ?>",
+  icon: "error",
+  confirmButtonColor: "#6366f1"
+});
+</script>
+<?php endif; ?>
 
 </body>
 </html>

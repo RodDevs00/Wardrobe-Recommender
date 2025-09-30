@@ -3,7 +3,10 @@ session_start();
 require_once "../db.php";
 $is_logged_in = isset($_SESSION['user_id']);
 
-if(isset($_POST['login'])){
+$login_success = false;
+$login_error = false;
+
+if (isset($_POST['login'])) {
     $username = $_POST['username'];
     $password = $_POST['password'];
 
@@ -11,13 +14,14 @@ if(isset($_POST['login'])){
     $stmt->execute([$username]);
     $user = $stmt->fetch();
 
-    if($user && password_verify($password, $user['password'])){
+    if ($user && password_verify($password, $user['password'])) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
-        header("Location: ../home.php");
-        exit;
+        $_SESSION['role'] = $user['role']; // store role in session
+
+        $login_success = $user['role']; // instead of true, store role
     } else {
-        $error = "Invalid username or password!";
+        $login_error = true;
     }
 }
 ?>
@@ -29,6 +33,7 @@ if(isset($_POST['login'])){
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - StyleSense</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     body {
       background: linear-gradient(135deg, #f3f4f6, #ffffff, #e5e7eb);
@@ -86,16 +91,6 @@ if(isset($_POST['login'])){
       <p class="text-gray-500 mt-1 text-sm">Sign in to your account</p>
     </div>
 
-    <!-- Error -->
-    <?php if(isset($error)): ?>
-      <div class="mb-4 p-3 rounded-md bg-red-100 text-red-700 text-sm flex items-center">
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728"/>
-        </svg>
-        <?php echo $error; ?>
-      </div>
-    <?php endif; ?>
-
     <!-- Form -->
     <form method="POST" class="space-y-5">
       <div>
@@ -121,8 +116,40 @@ if(isset($_POST['login'])){
       Don’t have an account?
       <a href="register.php" class="text-indigo-600 hover:text-indigo-800 font-medium transition">Register</a>
     </p>
+     <div class="mt-4 text-sm text-center">
+      <a href="forgot_password.php" class="text-indigo-600 hover:underline font-medium transition">Forgot Password?</a>
+    </div>
   </div>
 </main>
+
+<!-- SweetAlert -->
+<?php if ($login_success): ?>
+<script>
+let role = "<?php echo $login_success; ?>";
+let redirectUrl = role === "admin" ? "../admin/dashboard.php" : "../home.php";
+
+Swal.fire({
+  title: "Login Successful 🎉",
+  text: "Welcome back " + role.charAt(0).toUpperCase() + role.slice(1) + "!",
+  icon: "success",
+  timer: 2000,
+  showConfirmButton: false
+}).then(() => {
+  window.location.href = redirectUrl;
+});
+</script>
+<?php endif; ?>
+
+<?php if ($login_error): ?>
+<script>
+Swal.fire({
+  title: "Login Failed ❌",
+  text: "Invalid username or password.",
+  icon: "error",
+  confirmButtonColor: "#6366f1"
+});
+</script>
+<?php endif; ?>
 
 </body>
 </html>

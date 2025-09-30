@@ -144,6 +144,9 @@ def apply_post_corrections(predicted_label, detected_type, style, event):
 def recommend(mode):
     event = request.form.get("event", "").lower().replace(" ", "_")
     style = request.form.get("style", "").lower()
+    motif = request.form.get("motif", "").strip()
+    palette = request.form.get("palette", "").strip()
+
     wardrobe_type = request.form.get("wardrobe_type", None)
 
     event_description = EVENT_PRESETS.get(event, f"General outfit suggestion for {event}")
@@ -165,7 +168,14 @@ def recommend(mode):
         f.save(file_path)
         image = Image.open(file_path).convert("RGB")
 
-        text_prompts = [f"{c} {style_text} for {event_description}".strip() for c in allowed_categories]
+        # text_prompts = [f"{c} {style_text} for {event_description}".strip() for c in allowed_categories]
+        motif_text = f" with {motif} motif" if motif else ""
+        palette_text = f" in {palette} color palette" if palette else ""
+
+        text_prompts = [
+            f"{c} {style_text}{motif_text}{palette_text} for {event_description}".strip()
+            for c in allowed_categories
+        ]
         inputs = processor(text=text_prompts, images=image, return_tensors="pt", padding=True)
         outputs = model(**inputs)
 
@@ -251,11 +261,19 @@ def recommend(mode):
                         # ❌ If only upper OR only lower → no recommendation
                         top_match = {"recommendation": "❌ No recommendation"}
 
+            # ✅ Add motif and palette here if available
+    if top_match:
+        top_match["motif"] = motif
+        top_match["palette"] = palette
+    else:
+        top_match = {"recommendation": "❌ No recommendation", "motif": motif, "palette": palette}
 
     return jsonify({
         "mode": mode,
         "event": event,
         "style": style,
+        "motif": motif,
+        "palette": palette,
         "event_description": event_description,
         "wardrobe_type": top_match.get("detected_type") if top_match else None,
         "items": items,
@@ -263,6 +281,8 @@ def recommend(mode):
         "best_upper": best_upper,
         "best_lower": best_lower
     })
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)

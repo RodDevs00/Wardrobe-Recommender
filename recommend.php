@@ -39,6 +39,9 @@ $filterEvent = $_GET['event'] ?? '';
 $filterStyle = $_GET['style'] ?? '';
 $filterMode = $_GET['mode'] ?? '';
 $searchQuery = $_GET['search'] ?? '';
+$filterMotif   = $_GET['motif'] ?? '';
+$filterPalette = $_GET['palette'] ?? '';
+
 
 // Build query
 $query = "SELECT SQL_CALC_FOUND_ROWS * FROM ootd_history WHERE user_id = ? ";
@@ -48,6 +51,9 @@ if ($filterEvent) { $query .= "AND event = ? "; $params[] = $filterEvent; }
 if ($filterStyle) { $query .= "AND style = ? "; $params[] = $filterStyle; }
 if ($filterMode) { $query .= "AND mode = ? "; $params[] = $filterMode; }
 if ($searchQuery) { $query .= "AND event LIKE ? "; $params[] = "%$searchQuery%"; }
+if ($filterMotif) { $query .= "AND motif LIKE ? "; $params[] = "%$filterMotif%"; }
+if ($filterPalette) { $query .= "AND palette LIKE ? "; $params[] = "%$filterPalette%"; }
+
 
 $query .= "ORDER BY created_at DESC LIMIT ? OFFSET ?";
 $params[] = $limit;
@@ -73,6 +79,15 @@ $distinctEvents = $distinctEventsStmt->fetchAll(PDO::FETCH_COLUMN);
 $distinctStylesStmt = $pdo->prepare("SELECT DISTINCT style FROM ootd_history WHERE user_id=? AND style IS NOT NULL AND style != '' ORDER BY style");
 $distinctStylesStmt->execute([$user_id]);
 $distinctStyles = $distinctStylesStmt->fetchAll(PDO::FETCH_COLUMN);
+
+$distinctMotifsStmt = $pdo->prepare("SELECT DISTINCT motif FROM ootd_history WHERE user_id=? AND motif IS NOT NULL AND motif != '' ORDER BY motif");
+$distinctMotifsStmt->execute([$user_id]);
+$distinctMotifs = $distinctMotifsStmt->fetchAll(PDO::FETCH_COLUMN);
+
+$distinctPalettesStmt = $pdo->prepare("SELECT DISTINCT palette FROM ootd_history WHERE user_id=? AND palette IS NOT NULL AND palette != '' ORDER BY palette");
+$distinctPalettesStmt->execute([$user_id]);
+$distinctPalettes = $distinctPalettesStmt->fetchAll(PDO::FETCH_COLUMN);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -145,6 +160,23 @@ $distinctStyles = $distinctStylesStmt->fetchAll(PDO::FETCH_COLUMN);
                 <?php foreach($distinctStyles as $s): ?>
                     <option value="<?= htmlspecialchars($s) ?>" <?= $filterStyle === $s ? 'selected' : '' ?>>
                         <?= htmlspecialchars(ucwords(str_replace('_',' ',$s))) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <select name="motif" class="rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All Motifs</option>
+                <?php foreach($distinctMotifs as $m): ?>
+                    <option value="<?= htmlspecialchars($m) ?>" <?= $filterMotif === $m ? 'selected' : '' ?>>
+                        <?= htmlspecialchars(ucwords(str_replace('_',' ',$m))) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+            <select name="palette" class="rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All Palettes</option>
+                <?php foreach($distinctPalettes as $p): ?>
+                    <option value="<?= htmlspecialchars($p) ?>" <?= $filterPalette === $p ? 'selected' : '' ?>>
+                        <?= htmlspecialchars(ucwords(str_replace('_',' ',$p))) ?>
                     </option>
                 <?php endforeach; ?>
             </select>

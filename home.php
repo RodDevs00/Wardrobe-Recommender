@@ -12,6 +12,17 @@ $user_id = $_SESSION['user_id'];
 $history_stmt = $pdo->prepare("SELECT * FROM ootd_history WHERE user_id=? ORDER BY created_at DESC LIMIT 1");
 $history_stmt->execute([$user_id]);
 $latest = $history_stmt->fetch();
+
+// Fetch motifs
+$motif_stmt = $pdo->prepare("SELECT value FROM configs WHERE type = 'motif'");
+$motif_stmt->execute();
+$motifs = $motif_stmt->fetchAll(PDO::FETCH_COLUMN);
+
+// Fetch palettes
+$palette_stmt = $pdo->prepare("SELECT value FROM configs WHERE type = 'palette'");
+$palette_stmt->execute();
+$palettes = $palette_stmt->fetchAll(PDO::FETCH_COLUMN);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -105,11 +116,34 @@ $latest = $history_stmt->fetch();
                     <div>
                         <label class="block font-medium text-gray-700">Event</label>
                         <select name="event" class="w-full border rounded p-2 text-sm sm:text-base" required>
+                            <option value="">Choose Event type</option>
                             <option value="wedding">Wedding</option>
                             <option value="beach_party">Beach Party</option>
                             <option value="birthday">Birthday</option>
                         </select>
                     </div>
+                    <div id="motif-palette-container-manual" class="hidden space-y-4">
+                        <div>
+                            <label class="block font-medium text-gray-700">Motif</label>
+                            <select name="motif" class="w-full border p-2 rounded-md text-sm sm:text-base">
+                                <option value="">-- Select Motif --</option>
+                                <?php foreach($motifs as $m): ?>
+                                    <option value="<?= htmlspecialchars($m) ?>"><?= htmlspecialchars($m) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block font-medium text-gray-700">Color Palette</label>
+                            <select name="palette" class="w-full border p-2 rounded-md text-sm sm:text-base">
+                                <option value="">-- Select Palette --</option>
+                                <?php foreach($palettes as $p): ?>
+                                    <option value="<?= htmlspecialchars($p) ?>"><?= htmlspecialchars($p) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+
 
                     <div>
                         <label class="block font-medium text-gray-700">Wardrobe Type</label>
@@ -149,11 +183,34 @@ $latest = $history_stmt->fetch();
                     <div>
                         <label class="block font-medium text-gray-700">Event</label>
                         <select name="event" class="w-full border rounded p-2 text-sm sm:text-base" required>
+                            <option value="">Choose Event type</option>
                             <option value="wedding">Wedding</option>
                             <option value="beach_party">Beach Party</option>
                             <option value="birthday">Birthday</option>
                         </select>
                     </div>
+                    <div id="motif-palette-container-automatic" class="hidden space-y-4">
+                    <div>
+                        <label class="block font-medium text-gray-700">Motif</label>
+                        <select name="motif" class="w-full border p-2 rounded-md text-sm sm:text-base">
+                            <option value="">-- Select Motif --</option>
+                            <?php foreach($motifs as $m): ?>
+                                <option value="<?= htmlspecialchars($m) ?>"><?= htmlspecialchars($m) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block font-medium text-gray-700">Color Palette</label>
+                        <select name="palette" class="w-full border p-2 rounded-md text-sm sm:text-base">
+                            <option value="">-- Select Palette --</option>
+                            <?php foreach($palettes as $p): ?>
+                                <option value="<?= htmlspecialchars($p) ?>"><?= htmlspecialchars($p) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
 
                     <div>
                         <label class="block font-medium text-gray-700">Style Preference</label>
@@ -207,6 +264,36 @@ function showTab(tab) {
         document.getElementById('tab-automatic').classList.add('text-blue-600','border-blue-600','border-b-2');
     }
 }
+
+function toggleMotifPalette(selectElement) {
+    // Find the closest form (manual or automatic)
+    const form = selectElement.closest("form");
+    const container = form.querySelector("[id^='motif-palette-container']");
+
+    if (!container) return;
+
+    const val = selectElement.value;
+    if (val === "birthday" || val === "wedding") {
+        container.classList.remove("hidden");
+    } else {
+        container.classList.add("hidden");
+        container.querySelectorAll("select").forEach(sel => sel.value = "");
+    }
+}
+
+document.querySelectorAll("select[name='event']").forEach(sel => {
+    sel.addEventListener("change", function() {
+        toggleMotifPalette(this);
+    });
+});
+
+
+document.querySelectorAll("select[name='event']").forEach(sel => {
+    sel.addEventListener("change", function() {
+        toggleMotifPalette(this);
+    });
+});
+
 
 function previewImages(event, previewId) {
     const container = document.getElementById(previewId);
