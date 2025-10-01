@@ -23,6 +23,11 @@ $palette_stmt = $pdo->prepare("SELECT value FROM configs WHERE type = 'palette'"
 $palette_stmt->execute();
 $palettes = $palette_stmt->fetchAll(PDO::FETCH_COLUMN);
 
+// Fetch events
+$event_stmt = $pdo->prepare("SELECT distinct name FROM event_types ORDER BY name ASC");  
+$event_stmt->execute();
+$events = $event_stmt->fetchAll(PDO::FETCH_COLUMN);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -117,9 +122,9 @@ $palettes = $palette_stmt->fetchAll(PDO::FETCH_COLUMN);
                         <label class="block font-medium text-gray-700">Event</label>
                         <select name="event" class="w-full border rounded p-2 text-sm sm:text-base" required>
                             <option value="">Choose Event type</option>
-                            <option value="wedding">Wedding</option>
-                            <option value="beach_party">Beach Party</option>
-                            <option value="birthday">Birthday</option>
+                          <?php foreach($events as $event): ?>
+                              <option value="<?= htmlspecialchars($event) ?>"><?= htmlspecialchars(ucwords(str_replace("_", " ", $event))) ?></option>
+                          <?php endforeach; ?>
                         </select>
                     </div>
                     <div id="motif-palette-container-manual" class="hidden space-y-4">
@@ -180,13 +185,13 @@ $palettes = $palette_stmt->fetchAll(PDO::FETCH_COLUMN);
                 <form id="automatic-form" method="POST" enctype="multipart/form-data" class="space-y-4">
                     <input type="hidden" name="mode" value="automatic">
 
-                    <div>
+                     <div>
                         <label class="block font-medium text-gray-700">Event</label>
                         <select name="event" class="w-full border rounded p-2 text-sm sm:text-base" required>
                             <option value="">Choose Event type</option>
-                            <option value="wedding">Wedding</option>
-                            <option value="beach_party">Beach Party</option>
-                            <option value="birthday">Birthday</option>
+                          <?php foreach($events as $event): ?>
+                              <option value="<?= htmlspecialchars($event) ?>"><?= htmlspecialchars(ucwords(str_replace("_", " ", $event))) ?></option>
+                          <?php endforeach; ?>
                         </select>
                     </div>
                     <div id="motif-palette-container-automatic" class="hidden space-y-4">
@@ -273,7 +278,7 @@ function toggleMotifPalette(selectElement) {
     if (!container) return;
 
     const val = selectElement.value;
-    if (val === "birthday" || val === "wedding") {
+    if (val === "birthday" || val === "wedding" || val === "Birthday" || val === "Wedding") {
         container.classList.remove("hidden");
     } else {
         container.classList.add("hidden");

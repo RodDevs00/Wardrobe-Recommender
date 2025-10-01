@@ -43,6 +43,42 @@ if (isset($_POST['delete'])) {
 // Fetch all configs
 $stmt = $pdo->query("SELECT * FROM configs ORDER BY type, value ASC");
 $configs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch events
+$eventStmt = $pdo->query("SELECT * FROM event_types ORDER BY name ASC");
+$eventTypes = $eventStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Handle Add Event
+if (isset($_POST['add_event'])) {
+    $name = trim($_POST['name']);
+    if ($name !== "") {
+        $stmt = $pdo->prepare("INSERT INTO event_types (name) VALUES (?)");
+        $stmt->execute([$name]);
+    }
+    header("Location: setup.php?success=event_added");
+    exit;
+}
+
+// Handle Edit Event
+if (isset($_POST['edit_event'])) {
+    $id = $_POST['id'];
+    $name = trim($_POST['name']);
+    if ($name !== "") {
+        $stmt = $pdo->prepare("UPDATE event_types SET name=? WHERE id=?");
+        $stmt->execute([$name, $id]);
+    }
+    header("Location: setup.php?success=event_edited");
+    exit;
+}
+
+// Handle Delete Event
+if (isset($_POST['delete_event'])) {
+    $id = $_POST['id'];
+    $stmt = $pdo->prepare("DELETE FROM event_types WHERE id=?");
+    $stmt->execute([$id]);
+    header("Location: setup.php?success=event_deleted");
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -147,6 +183,63 @@ $configs = $stmt->fetchAll(PDO::FETCH_ASSOC);
       </tbody>
     </table>
   </div>
+
+  <div class="max-w-5xl mx-auto mt-10 bg-white p-8 rounded-xl shadow-lg">
+  <h2 class="text-2xl font-bold mb-6 text-gray-900">Manage Event Types</h2>
+
+  <!-- Add Event Form -->
+  <form method="POST" class="flex flex-col sm:flex-row gap-4 mb-8">
+    <input type="text" name="name" placeholder="Enter event name"
+      class="border rounded-lg p-2 flex-1 focus:ring focus:ring-blue-300" required>
+    <button type="submit" name="add_event"
+      class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg shadow">
+      Add Event
+    </button>
+  </form>
+
+  <!-- Event List -->
+  <div class="overflow-x-auto">
+    <table class="w-full border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="border p-3 text-left">ID</th>
+          <th class="border p-3 text-left">Event Name</th>
+          <th class="border p-3 text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($eventTypes as $e): ?>
+        <tr class="hover:bg-gray-50">
+          <td class="border p-3"><?= htmlspecialchars($e['id']) ?></td>
+          <td class="border p-3">
+            <form method="POST" class="flex gap-2 items-center">
+              <input type="hidden" name="id" value="<?= $e['id'] ?>">
+              <input type="text" name="name" value="<?= htmlspecialchars($e['name']) ?>"
+                class="border rounded-lg p-2 flex-1 focus:ring focus:ring-green-300">
+              <button type="submit" name="edit_event"
+                class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow">Save</button>
+            </form>
+          </td>
+          <td class="border p-3 text-center">
+            <form method="POST" onsubmit="return confirmDelete(event, this);">
+              <input type="hidden" name="id" value="<?= $e['id'] ?>">
+              <input type="hidden" name="delete_event" value="1">
+              <button type="submit"
+                class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow">Delete</button>
+            </form>
+          </td>
+        </tr>
+        <?php endforeach; ?>
+        <?php if (count($eventTypes) === 0): ?>
+        <tr>
+          <td colspan="3" class="text-center text-gray-500 py-6">No events found.</td>
+        </tr>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -181,6 +274,14 @@ if (success) {
   } else if (success === 'deleted') {
     options = { icon: 'info', title: 'Deleted!', text: 'Entry has been deleted.' };
   }
+    else if (success === 'event_added') {
+    options = { icon: 'success', title: 'Event Added!', text: 'New event has been added.' };
+  } else if (success === 'event_edited') {
+    options = { icon: 'success', title: 'Event Updated!', text: 'Event has been updated.' };
+  } else if (success === 'event_deleted') {
+    options = { icon: 'info', title: 'Event Deleted!', text: 'Event has been deleted.' };
+  }
+
 
   Swal.fire({
     ...options,
