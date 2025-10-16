@@ -33,12 +33,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mail->isSMTP();
             $mail->Host       = 'smtp.gmail.com';
             $mail->SMTPAuth   = true;
-            $mail->Username   = 'rodpuyat00@gmail.com';
-            $mail->Password   = 'wyav egxl xils zrva'; // move to config
+            $mail->Username   = 'wardroberecommender123@gmail.com';
+            $mail->Password   = 'safv qlgk kiwi ooml'; // move to config
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port       = 587;
 
-            $mail->setFrom('rodpuyat00@gmail.com', 'StyleSense');
+            $mail->setFrom('wardroberecommender123@gmail.com', 'StyleSense');
             $mail->addAddress($email);
 
             $mail->isHTML(true);

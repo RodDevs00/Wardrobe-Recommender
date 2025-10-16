@@ -24,318 +24,397 @@ $palette_stmt->execute();
 $palettes = $palette_stmt->fetchAll(PDO::FETCH_COLUMN);
 
 // Fetch events
-$event_stmt = $pdo->prepare("SELECT distinct name FROM event_types ORDER BY name ASC");  
+$event_stmt = $pdo->prepare("SELECT distinct name FROM event_types ORDER BY name ASC");
 $event_stmt->execute();
 $events = $event_stmt->fetchAll(PDO::FETCH_COLUMN);
 
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stylesense - Recommendation</title>
     <style>
-    .loader {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: conic-gradient(#3b82f6, #06b6d4, #3b82f6);
-        animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
+        .loader {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: conic-gradient(#3b82f6, #06b6d4, #3b82f6);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
     </style>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-100 min-h-screen flex flex-col">
 
-<!-- Navbar -->
-<nav class="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-50">
-    <!-- Left: Logo -->
-    <div class="flex items-center space-x-3">
-        <img src="https://img.icons8.com/color/48/wardrobe.png" class="h-8 w-8" alt="AI Wardrobe Logo">
-        <span class="text-lg sm:text-xl font-bold text-gray-800">Stylesense</span>
+    <!-- Navbar -->
+    <nav class="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+        <!-- Left: Logo -->
+        <div class="flex items-center space-x-3">
+            <img src="https://img.icons8.com/color/48/wardrobe.png" class="h-8 w-8" alt="AI Wardrobe Logo">
+            <span class="text-lg sm:text-xl font-bold text-gray-800">Stylesense</span>
+        </div>
+
+        <!-- Mobile Hamburger -->
+        <button class="md:hidden text-gray-700 focus:outline-none" id="menu-toggle">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+
+        <!-- Desktop Menu -->
+        <div class="hidden md:flex space-x-6 text-sm sm:text-base font-medium" id="menu">
+            <a href="index.php" class="text-blue-600 font-semibold hover:text-blue-800">Home</a>
+            <a href="recommend.php" class="text-gray-600 hover:text-blue-600">Recommendations</a>
+            <a href="profile.php" class="text-gray-600 hover:text-blue-600">Profile</a>
+            <a href="auth/logout.php" class="text-red-500 hover:text-red-700">Logout</a>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="md:hidden hidden flex-col space-y-2 px-4 pb-4 border-b border-gray-200 bg-gray-50 transition-all duration-300 ease-in-out">
+        <a href="index.php" class="block text-blue-600 font-semibold hover:text-blue-800">Home</a>
+        <a href="recommend.php" class="block text-gray-600 hover:text-blue-600">Recommendations</a>
+        <a href="profile.php" class="block text-gray-600 hover:text-blue-600">Profile</a>
+        <a href="auth/logout.php" class="block text-red-500 hover:text-red-700">Logout</a>
     </div>
 
-    <!-- Mobile Hamburger -->
-    <button class="md:hidden text-gray-700 focus:outline-none" id="menu-toggle">
-        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
-        </svg>
-    </button>
 
-    <!-- Desktop Menu -->
-    <div class="hidden md:flex space-x-6 text-sm sm:text-base font-medium" id="menu">
-        <a href="index.php" class="text-blue-600 font-semibold hover:text-blue-800">Home</a>
-        <a href="recommend.php" class="text-gray-600 hover:text-blue-600">Recommendations</a>
-        <a href="profile.php" class="text-gray-600 hover:text-blue-600">Profile</a>
-        <a href="auth/logout.php" class="text-red-500 hover:text-red-700">Logout</a>
-    </div>
-</nav>
+    <!-- Main Content -->
+    <div class="flex-1 flex justify-center py-8 px-4 sm:px-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-6xl">
 
-<!-- Mobile Menu -->
-<div id="mobile-menu" class="md:hidden hidden flex-col space-y-2 px-4 pb-4 border-b border-gray-200 bg-gray-50 transition-all duration-300 ease-in-out">
-    <a href="index.php" class="block text-blue-600 font-semibold hover:text-blue-800">Home</a>
-    <a href="recommend.php" class="block text-gray-600 hover:text-blue-600">Recommendations</a>
-    <a href="profile.php" class="block text-gray-600 hover:text-blue-600">Profile</a>
-    <a href="auth/logout.php" class="block text-red-500 hover:text-red-700">Logout</a>
-</div>
+            <!-- Card 1: Forms -->
+            <div class="bg-white shadow-lg rounded-2xl p-6 sm:p-8">
+                <h2 class="text-xl sm:text-2xl font-bold mb-6 text-center text-gray-700">Get Your AI Recommendation</h2>
 
-
-<!-- Main Content -->
-<div class="flex-1 flex justify-center py-8 px-4 sm:px-6">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-6xl">
-
-        <!-- Card 1: Forms -->
-        <div class="bg-white shadow-lg rounded-2xl p-6 sm:p-8">
-            <h2 class="text-xl sm:text-2xl font-bold mb-6 text-center text-gray-700">Get Your AI Recommendation</h2>
-
-            <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-3 rounded mb-4 text-xs sm:text-sm">
-                ⚠️ Note: Accessories and shoes are excluded. Only upper, lower, or full-body wardrobe items are used.
-            </div>
-
-            <!-- Tabs -->
-            <ul class="flex border-b mb-4 justify-center text-sm sm:text-base">
-                <li class="mr-2">
-                    <button type="button" onclick="showTab('manual')" id="tab-manual"
-                        class="py-2 px-4 sm:px-6 font-semibold text-blue-600 border-b-2 border-blue-600">
-                        Manual
-                    </button>
-                </li>
-                <li>
-                    <button type="button" onclick="showTab('automatic')" id="tab-automatic"
-                        class="py-2 px-4 sm:px-6 font-semibold text-gray-500 hover:text-blue-600">
-                        Automatic
-                    </button>
-                </li>
-            </ul>
-
-            <!-- Manual Form -->
-            <div id="manual" class="tab-content">
-                <form id="manual-form" method="POST" enctype="multipart/form-data" class="space-y-4">
-                    <input type="hidden" name="mode" value="manual">
-
-                    <div>
-                        <label class="block font-medium text-gray-700">Event</label>
-                        <select name="event" class="w-full border rounded p-2 text-sm sm:text-base" required>
-                            <option value="">Choose Event type</option>
-                          <?php foreach($events as $event): ?>
-                              <option value="<?= htmlspecialchars($event) ?>"><?= htmlspecialchars(ucwords(str_replace("_", " ", $event))) ?></option>
-                          <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div id="motif-palette-container-manual" class="hidden space-y-4">
-                        <div>
-                            <label class="block font-medium text-gray-700">Motif</label>
-                            <select name="motif" class="w-full border p-2 rounded-md text-sm sm:text-base">
-                                <option value="">-- Select Motif --</option>
-                                <?php foreach($motifs as $m): ?>
-                                    <option value="<?= htmlspecialchars($m) ?>"><?= htmlspecialchars($m) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block font-medium text-gray-700">Color Palette</label>
-                            <select name="palette" class="w-full border p-2 rounded-md text-sm sm:text-base">
-                                <option value="">-- Select Palette --</option>
-                                <?php foreach($palettes as $p): ?>
-                                    <option value="<?= htmlspecialchars($p) ?>"><?= htmlspecialchars($p) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-
-
-                    <div>
-                        <label class="block font-medium text-gray-700">Wardrobe Type</label>
-                        <select name="wardrobe_type" class="w-full border p-2 rounded-md text-sm sm:text-base" required>
-                            <option value="upper">Upper</option>
-                            <option value="lower">Lower</option>
-                            <option value="full-body">Full Body</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block font-medium text-gray-700">Style Preference</label>
-                        <select name="style" class="w-full border p-2 rounded-md text-sm sm:text-base" required>
-                            <option value="feminine">Feminine</option>
-                            <option value="masculine">Masculine</option>
-                            <option value="no_preference">No Preference</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block font-medium text-gray-700">Upload up to 5 images</label>
-                        <input type="file" name="images[]" accept="image/*" multiple required 
-                            class="w-full text-sm sm:text-base" onchange="previewImages(event, 'manual-preview')">
-                        <div id="manual-preview" class="flex flex-wrap gap-2 mt-2"></div>
-                    </div>
-
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 text-sm sm:text-base">
-                        Get Recommendation
-                    </button>
-                </form>
-            </div>
-
-            <!-- Automatic Form -->
-            <div id="automatic" class="tab-content hidden">
-                <form id="automatic-form" method="POST" enctype="multipart/form-data" class="space-y-4">
-                    <input type="hidden" name="mode" value="automatic">
-
-                     <div>
-                        <label class="block font-medium text-gray-700">Event</label>
-                        <select name="event" class="w-full border rounded p-2 text-sm sm:text-base" required>
-                            <option value="">Choose Event type</option>
-                          <?php foreach($events as $event): ?>
-                              <option value="<?= htmlspecialchars($event) ?>"><?= htmlspecialchars(ucwords(str_replace("_", " ", $event))) ?></option>
-                          <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div id="motif-palette-container-automatic" class="hidden space-y-4">
-                    <div>
-                        <label class="block font-medium text-gray-700">Motif</label>
-                        <select name="motif" class="w-full border p-2 rounded-md text-sm sm:text-base">
-                            <option value="">-- Select Motif --</option>
-                            <?php foreach($motifs as $m): ?>
-                                <option value="<?= htmlspecialchars($m) ?>"><?= htmlspecialchars($m) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block font-medium text-gray-700">Color Palette</label>
-                        <select name="palette" class="w-full border p-2 rounded-md text-sm sm:text-base">
-                            <option value="">-- Select Palette --</option>
-                            <?php foreach($palettes as $p): ?>
-                                <option value="<?= htmlspecialchars($p) ?>"><?= htmlspecialchars($p) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-3 rounded mb-4 text-xs sm:text-sm">
+                    ⚠️ Note: Accessories and shoes are excluded. Only upper, lower, or full-body wardrobe items are used.
                 </div>
 
+                <!-- Tabs -->
+                <ul class="flex border-b mb-4 justify-center text-sm sm:text-base">
+                    <li class="mr-2">
+                        <button type="button" onclick="showTab('manual')" id="tab-manual"
+                            class="py-2 px-4 sm:px-6 font-semibold text-blue-600 border-b-2 border-blue-600">
+                            Manual
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" onclick="showTab('automatic')" id="tab-automatic"
+                            class="py-2 px-4 sm:px-6 font-semibold text-gray-500 hover:text-blue-600">
+                            Automatic
+                        </button>
+                    </li>
+                </ul>
 
-                    <div>
-                        <label class="block font-medium text-gray-700">Style Preference</label>
-                        <select name="style" class="w-full border p-2 rounded-md text-sm sm:text-base" required>
-                            <option value="feminine">Feminine</option>
-                            <option value="masculine">Masculine</option>
-                            <option value="no_preference">No Preference</option>
-                        </select>
-                    </div>
+                <!-- Manual Form -->
+                <div id="manual" class="tab-content">
+                    <form id="manual-form" method="POST" enctype="multipart/form-data" class="space-y-4">
+                        <input type="hidden" name="mode" value="manual">
 
-                    <div>
-                        <label class="block font-medium text-gray-700">Upload up to 10 images</label>
-                        <input type="file" name="images[]" accept="image/*" multiple required 
-                            class="w-full text-sm sm:text-base" onchange="previewImages(event, 'auto-preview')">
-                        <div id="auto-preview" class="flex flex-wrap gap-2 mt-2"></div>
-                    </div>
+                        <div>
+                            <label class="block font-medium text-gray-700">Event</label>
+                            <select name="event" class="w-full border rounded p-2 text-sm sm:text-base" required>
+                                <option value="">Choose Event type</option>
+                                <?php foreach ($events as $event): ?>
+                                    <option value="<?= htmlspecialchars($event) ?>"><?= htmlspecialchars(ucwords(str_replace("_", " ", $event))) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div id="motif-palette-container-manual" class="hidden space-y-4">
+                            <div>
+                                <label class="block font-medium text-gray-700">Motif</label>
+                                <select name="motif" class="w-full border p-2 rounded-md text-sm sm:text-base">
+                                    <option value="">-- Select Motif --</option>
+                                    <?php foreach ($motifs as $m): ?>
+                                        <option value="<?= htmlspecialchars($m) ?>"><?= htmlspecialchars($m) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
 
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 text-sm sm:text-base">
-                        Get Recommendation
-                    </button>
-                </form>
+                            <div>
+                                <label class="block font-medium text-gray-700">Color Palette</label>
+                                <select name="palette" class="w-full border p-2 rounded-md text-sm sm:text-base">
+                                    <option value="">-- Select Palette --</option>
+                                    <?php foreach ($palettes as $p): ?>
+                                        <option value="<?= htmlspecialchars($p) ?>"><?= htmlspecialchars($p) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+
+                        <div>
+                            <label class="block font-medium text-gray-700">Wardrobe Type</label>
+                            <select name="wardrobe_type" class="w-full border p-2 rounded-md text-sm sm:text-base" required>
+                                <option value="upper">Upper</option>
+                                <option value="lower">Lower</option>
+                                <option value="full-body">Full Body</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block font-medium text-gray-700">Style Preference</label>
+                            <select name="style" class="w-full border p-2 rounded-md text-sm sm:text-base" required>
+                                <option value="feminine">Feminine</option>
+                                <option value="masculine">Masculine</option>
+                                <option value="no_preference">No Preference</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-gray-700">Upload up to 5 images</label>
+                            <input type="file" name="images[]" accept="image/*" multiple required
+                                class="w-full text-sm sm:text-base" onchange="previewImages(event, 'manual-preview')">
+                            <div class="flex justify-center">
+                                <button type="button"
+                                    onclick="openCameraModal('manual')"
+                                    class="mt-2 bg-blue-600 text-white text-sm px-3 py-1.5 rounded-lg hover:bg-blue-700">
+                                    Open Camera
+                                </button>
+                            </div>
+
+
+
+
+
+                            <div id="manual-preview" class="flex flex-wrap gap-2 mt-2"></div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 text-sm sm:text-base">
+                            Get Recommendation
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Automatic Form -->
+                <div id="automatic" class="tab-content hidden">
+                    <form id="automatic-form" method="POST" enctype="multipart/form-data" class="space-y-4">
+                        <input type="hidden" name="mode" value="automatic">
+
+                        <div>
+                            <label class="block font-medium text-gray-700">Event</label>
+                            <select name="event" class="w-full border rounded p-2 text-sm sm:text-base" required>
+                                <option value="">Choose Event type</option>
+                                <?php foreach ($events as $event): ?>
+                                    <option value="<?= htmlspecialchars($event) ?>"><?= htmlspecialchars(ucwords(str_replace("_", " ", $event))) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div id="motif-palette-container-automatic" class="hidden space-y-4">
+                            <div>
+                                <label class="block font-medium text-gray-700">Motif</label>
+                                <select name="motif" class="w-full border p-2 rounded-md text-sm sm:text-base">
+                                    <option value="">-- Select Motif --</option>
+                                    <?php foreach ($motifs as $m): ?>
+                                        <option value="<?= htmlspecialchars($m) ?>"><?= htmlspecialchars($m) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block font-medium text-gray-700">Color Palette</label>
+                                <select name="palette" class="w-full border p-2 rounded-md text-sm sm:text-base">
+                                    <option value="">-- Select Palette --</option>
+                                    <?php foreach ($palettes as $p): ?>
+                                        <option value="<?= htmlspecialchars($p) ?>"><?= htmlspecialchars($p) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+
+                        <div>
+                            <label class="block font-medium text-gray-700">Style Preference</label>
+                            <select name="style" class="w-full border p-2 rounded-md text-sm sm:text-base" required>
+                                <option value="feminine">Feminine</option>
+                                <option value="masculine">Masculine</option>
+                                <option value="no_preference">No Preference</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block font-medium text-gray-700">Upload up to 10 images</label>
+                            <input type="file" name="images[]" accept="image/*" multiple required
+                                class="w-full text-sm sm:text-base" onchange="previewImages(event, 'auto-preview')">
+
+                            <div class="flex justify-center">
+                                <button type="button"
+                                    onclick="openCameraModal('automatic')"
+                                    class="mt-2 bg-blue-600 text-white text-sm px-3 py-1.5 rounded-lg hover:bg-blue-700">
+                                    Open Camera
+                                </button>
+                            </div>
+
+
+                            <div id="auto-preview" class="flex flex-wrap gap-2 mt-2"></div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 text-sm sm:text-base">
+                            Get Recommendation
+                        </button>
+                    </form>
+                </div>
             </div>
-        </div>
 
-        <!-- Card 2: Result -->
-        <div class="bg-white shadow-lg rounded-2xl p-6 sm:p-8">
-            <h2 class="text-xl sm:text-2xl font-bold mb-6 text-center text-gray-700">Latest Result</h2>
-            <div id="latest-result">
-                <p class="text-gray-500 text-center">No recommendations yet.</p>
+            <!-- Card 2: Result -->
+            <div class="bg-white shadow-lg rounded-2xl p-6 sm:p-8">
+                <h2 class="text-xl sm:text-2xl font-bold mb-6 text-center text-gray-700">Latest Result</h2>
+                <div id="latest-result">
+                    <p class="text-gray-500 text-center">No recommendations yet.</p>
+                </div>
             </div>
-        </div>
 
+        </div>
     </div>
-</div>
-
-<script>
-
-document.getElementById("menu-toggle").addEventListener("click", () => {
-    const mobileMenu = document.getElementById("mobile-menu");
-    mobileMenu.classList.toggle("hidden");
-});
-
-function showTab(tab) {
-    document.querySelectorAll('.tab-content').forEach(div => div.classList.add('hidden'));
-    document.getElementById(tab).classList.remove('hidden');
-    document.getElementById('tab-manual').classList.remove('text-blue-600','border-blue-600','border-b-2');
-    document.getElementById('tab-automatic').classList.remove('text-blue-600','border-blue-600','border-b-2');
-    if(tab === 'manual'){
-        document.getElementById('tab-manual').classList.add('text-blue-600','border-blue-600','border-b-2');
-    } else {
-        document.getElementById('tab-automatic').classList.add('text-blue-600','border-blue-600','border-b-2');
-    }
-}
-
-function toggleMotifPalette(selectElement) {
-    // Find the closest form (manual or automatic)
-    const form = selectElement.closest("form");
-    const container = form.querySelector("[id^='motif-palette-container']");
-
-    if (!container) return;
-
-    const val = selectElement.value;
-    if (val === "birthday" || val === "wedding" || val === "Birthday" || val === "Wedding") {
-        container.classList.remove("hidden");
-    } else {
-        container.classList.add("hidden");
-        container.querySelectorAll("select").forEach(sel => sel.value = "");
-    }
-}
-
-document.querySelectorAll("select[name='event']").forEach(sel => {
-    sel.addEventListener("change", function() {
-        toggleMotifPalette(this);
-    });
-});
 
 
-document.querySelectorAll("select[name='event']").forEach(sel => {
-    sel.addEventListener("change", function() {
-        toggleMotifPalette(this);
-    });
-});
+    <!-- Camera Modal -->
+    <div id="camera-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-xl p-6 w-11/12 sm:w-96 relative">
+            <button onclick="closeCameraModal()"
+                class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl font-bold">&times;</button>
+
+            <h3 class="text-lg font-semibold text-center mb-4 text-gray-700">📸 Take a Photo</h3>
+
+            <video id="camera-stream" autoplay playsinline class="w-full rounded-lg bg-gray-200"></video>
+
+            <canvas id="camera-canvas" class="hidden"></canvas>
+
+            <div class="flex justify-center mt-4 space-x-3">
+                <button onclick="capturePhoto()"
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Capture</button>
+
+                <button onclick="switchCamera()"
+                    class="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600">Switch</button>
+
+                <button onclick="closeCameraModal()"
+                    class="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400">Cancel</button>
+            </div>
+
+        </div>
+    </div>
 
 
-function previewImages(event, previewId) {
-    const container = document.getElementById(previewId);
-    container.innerHTML = ""; 
-    const files = event.target.files;
-    if (!files) return;
+    <script>
+        // Hide full-body option in manual form when masculine is selected
+        document.querySelector("form#manual-form select[name='style']").addEventListener("change", function() {
+            const wardrobeSelect = document.querySelector("form#manual-form select[name='wardrobe_type']");
+            const fullBodyOption = Array.from(wardrobeSelect.options).find(opt => opt.value === "full-body");
 
-    // detect mode from previewId
-    const maxFiles = previewId.includes("manual") ? 5 : 10;
+            if (this.value === "masculine") {
+                // Hide the full-body option
+                fullBodyOption.hidden = true;
 
-    if (files.length > maxFiles) {
-        alert(`❌ You can only upload up to ${maxFiles} images in ${previewId.includes("manual") ? "manual" : "automatic"} mode.`);
-        event.target.value = ""; // reset input
-        return;
-    }
+                // If it's currently selected, switch to "upper"
+                if (wardrobeSelect.value === "full-body") {
+                    wardrobeSelect.value = "upper";
+                }
+            } else {
+                // Show it back for feminine / no_preference
+                fullBodyOption.hidden = false;
+            }
+        });
+    </script>
 
-    [...files].forEach(file => {
-        if (file.type.startsWith("image/")) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                const img = document.createElement("img");
-                img.src = e.target.result;
-                img.className = "h-20 w-20 object-cover rounded-lg shadow";
-                container.appendChild(img);
-            };
-            reader.readAsDataURL(file);
+
+    <script>
+        document.getElementById("menu-toggle").addEventListener("click", () => {
+            const mobileMenu = document.getElementById("mobile-menu");
+            mobileMenu.classList.toggle("hidden");
+        });
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(div => div.classList.add('hidden'));
+            document.getElementById(tab).classList.remove('hidden');
+            document.getElementById('tab-manual').classList.remove('text-blue-600', 'border-blue-600', 'border-b-2');
+            document.getElementById('tab-automatic').classList.remove('text-blue-600', 'border-blue-600', 'border-b-2');
+            if (tab === 'manual') {
+                document.getElementById('tab-manual').classList.add('text-blue-600', 'border-blue-600', 'border-b-2');
+            } else {
+                document.getElementById('tab-automatic').classList.add('text-blue-600', 'border-blue-600', 'border-b-2');
+            }
         }
-    });
-}
+
+        function toggleMotifPalette(selectElement) {
+            // Find the closest form (manual or automatic)
+            const form = selectElement.closest("form");
+            const container = form.querySelector("[id^='motif-palette-container']");
+
+            if (!container) return;
+
+            const val = selectElement.value;
+            if (val === "birthday" || val === "wedding" || val === "Birthday" || val === "Wedding") {
+                container.classList.remove("hidden");
+            } else {
+                container.classList.add("hidden");
+                container.querySelectorAll("select").forEach(sel => sel.value = "");
+            }
+        }
+
+        document.querySelectorAll("select[name='event']").forEach(sel => {
+            sel.addEventListener("change", function() {
+                toggleMotifPalette(this);
+            });
+        });
 
 
-async function submitForm(formId) {
-    const form = document.getElementById(formId);
-    const formData = new FormData(form);
-    const resultDiv = document.getElementById("latest-result");
+        document.querySelectorAll("select[name='event']").forEach(sel => {
+            sel.addEventListener("change", function() {
+                toggleMotifPalette(this);
+            });
+        });
 
-    resultDiv.innerHTML = `
+
+        function previewImages(event, previewId) {
+            const container = document.getElementById(previewId);
+            container.innerHTML = "";
+            const files = event.target.files;
+            if (!files) return;
+
+            // detect mode from previewId
+            const maxFiles = previewId.includes("manual") ? 5 : 10;
+
+            if (files.length > maxFiles) {
+                alert(`❌ You can only upload up to ${maxFiles} images in ${previewId.includes("manual") ? "manual" : "automatic"} mode.`);
+                event.target.value = ""; // reset input
+                return;
+            }
+
+            [...files].forEach(file => {
+                if (file.type.startsWith("image/")) {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        const img = document.createElement("img");
+                        img.src = e.target.result;
+                        img.className = "h-20 w-20 object-cover rounded-lg shadow";
+                        container.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+
+        async function submitForm(formId) {
+            const form = document.getElementById(formId);
+            const formData = new FormData(form);
+            const resultDiv = document.getElementById("latest-result");
+
+            resultDiv.innerHTML = `
         <div class="flex flex-col items-center justify-center py-10">
             <div class="loader mb-3"></div>
             <p class="text-gray-500 text-center text-sm">AI is thinking...</p>
@@ -345,24 +424,27 @@ async function submitForm(formId) {
         </div>
     `;
 
-    try {
-        const response = await fetch("recommend_process.php", { method: "POST", body: formData });
-        const data = await response.json();
-        if (data.success) {
-            renderLatestResult(data);
-        } else {
-            resultDiv.innerHTML = `<p class='text-red-500 text-center'>❌ ${data.error || "Something went wrong"}</p>`;
+            try {
+                const response = await fetch("recommend_process.php", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    renderLatestResult(data);
+                } else {
+                    resultDiv.innerHTML = `<p class='text-red-500 text-center'>❌ ${data.error || "Something went wrong"}</p>`;
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<p class='text-red-500 text-center'>⚠️ Error: ${err.message}</p>`;
+            }
         }
-    } catch (err) {
-        resultDiv.innerHTML = `<p class='text-red-500 text-center'>⚠️ Error: ${err.message}</p>`;
-    }
-}
 
-function renderLatestResult(data) {
-    // Safely handle undefined event
-    let eventName = data.event ? data.event.replace("_", " ") : "Unknown event";
+        function renderLatestResult(data) {
+            // Safely handle undefined event
+            let eventName = data.event ? data.event.replace("_", " ") : "Unknown event";
 
-    let html = `
+            let html = `
         <h3 class="text-lg font-bold text-gray-800 mb-3">Recommendation Result</h3>
         <p class="text-sm text-gray-600 mb-4">
             <strong>Event:</strong> ${eventName} <br>
@@ -371,95 +453,94 @@ function renderLatestResult(data) {
         </p>
     `;
 
-    // ---------------------------
-    // Determine Top Matches
-    // ---------------------------
-    let topMatches = [];
-    const uploadedItems = data.items || [];
+            // ---------------------------
+            // Determine Top Matches
+            // ---------------------------
+            let topMatches = [];
+            const uploadedItems = data.items || [];
 
-    if (data.mode === "manual") {
-        if (data.top_match) topMatches.push(data.top_match);
-    } else { // automatic
-        // Get all items of each type
-        const upperItems = uploadedItems.filter(it => it.detected_type === "upper");
-        const lowerItems = uploadedItems.filter(it => it.detected_type === "lower");
-        const fullBodyItems = uploadedItems.filter(it => it.detected_type === "full-body");
+            if (data.mode === "manual") {
+                if (data.top_match) topMatches.push(data.top_match);
+            } else { // automatic
+                // Get all items of each type
+                const upperItems = uploadedItems.filter(it => it.detected_type === "upper");
+                const lowerItems = uploadedItems.filter(it => it.detected_type === "lower");
+                const fullBodyItems = uploadedItems.filter(it => it.detected_type === "full-body");
 
-        // Pick the highest similarity for each type
-        const bestUpper = upperItems.length
-            ? upperItems.reduce((prev, curr) => curr.similarity > prev.similarity ? curr : prev)
-            : null;
+                // Pick the highest similarity for each type
+                const bestUpper = upperItems.length ?
+                    upperItems.reduce((prev, curr) => curr.similarity > prev.similarity ? curr : prev) :
+                    null;
 
-        const bestLower = lowerItems.length
-            ? lowerItems.reduce((prev, curr) => curr.similarity > prev.similarity ? curr : prev)
-            : null;
+                const bestLower = lowerItems.length ?
+                    lowerItems.reduce((prev, curr) => curr.similarity > prev.similarity ? curr : prev) :
+                    null;
 
-        const bestFullBody = fullBodyItems.length
-            ? fullBodyItems.reduce((prev, curr) => curr.similarity > prev.similarity ? curr : prev)
-            : null;
+                const bestFullBody = fullBodyItems.length ?
+                    fullBodyItems.reduce((prev, curr) => curr.similarity > prev.similarity ? curr : prev) :
+                    null;
 
-        // Determine whether full-body or upper+lower combo
-        const fullSim = bestFullBody ? bestFullBody.similarity : 0;
-        const upperSim = bestUpper ? bestUpper.similarity : 0;
-        const lowerSim = bestLower ? bestLower.similarity : 0;
-        const comboSim = ((upperSim + lowerSim) / ((bestUpper ? 1 : 0) + (bestLower ? 1 : 0) || 1));
+                // Determine whether full-body or upper+lower combo
+                const fullSim = bestFullBody ? bestFullBody.similarity : 0;
+                const upperSim = bestUpper ? bestUpper.similarity : 0;
+                const lowerSim = bestLower ? bestLower.similarity : 0;
+                const comboSim = ((upperSim + lowerSim) / ((bestUpper ? 1 : 0) + (bestLower ? 1 : 0) || 1));
 
-        if (bestFullBody && fullSim >= comboSim) {
-            topMatches.push(bestFullBody);
-        } else {
-            if (bestUpper) topMatches.push(bestUpper);
-            if (bestLower) topMatches.push(bestLower);
-        }
+                if (bestFullBody && fullSim >= comboSim) {
+                    topMatches.push(bestFullBody);
+                } else {
+                    if (bestUpper) topMatches.push(bestUpper);
+                    if (bestLower) topMatches.push(bestLower);
+                }
 
-       
-}
- // // Fallback: pick highest similarity if nothing selected
-        // if (topMatches.length === 0 && uploadedItems.length > 0) {
-        //     const highest = uploadedItems.reduce((prev, curr) => curr.similarity > prev.similarity ? curr : prev);
-        //     topMatches.push(highest);
-        // }
-        if (data.top_match && data.top_match.recommendation === "❌ No recommendation") {
 
-             if (data.mode === "automatic") {
-    html += `
+            }
+            // // Fallback: pick highest similarity if nothing selected
+            // if (topMatches.length === 0 && uploadedItems.length > 0) {
+            //     const highest = uploadedItems.reduce((prev, curr) => curr.similarity > prev.similarity ? curr : prev);
+            //     topMatches.push(highest);
+            // }
+            if (data.top_match && data.top_match.recommendation === "❌ No recommendation") {
+
+                if (data.mode === "automatic") {
+                    html += `
         <div class="mb-8 p-4 border-2 border-red-400 rounded-lg bg-red-50 shadow-sm text-center">
             <h4 class="text-md font-semibold text-red-700 mb-2">❌ No Recommendation</h4>
             <p class="text-sm text-gray-600">Please upload both upper and lower items, or a full-body outfit.</p>
         </div>
-    `; 
-}
-else{
-    html += `
+    `;
+                } else {
+                    html += `
         <div class="mb-8 p-4 border-2 border-red-400 rounded-lg bg-red-50 shadow-sm text-center">
             <h4 class="text-md font-semibold text-red-700 mb-2">❌ No Recommendation</h4>
             <p class="text-sm text-gray-600">Please upload more wardrobe items for better recommendations.</p>
         </div>
     `;
-}
-    document.getElementById("latest-result").innerHTML = html;
-    return; // ⛔ stop here, don’t show any fake "top match"
+                }
+                document.getElementById("latest-result").innerHTML = html;
+                return; // ⛔ stop here, don’t show any fake "top match"
 
-    }
+            }
 
-   // ---------------------------
-// Display Top Matches (stack upper+lower combo)
-// ---------------------------
-if (topMatches.length > 0) {
-    html += `
+            // ---------------------------
+            // Display Top Matches (stack upper+lower combo)
+            // ---------------------------
+            if (topMatches.length > 0) {
+                html += `
         <div class="mb-8 p-4 border-2 border-green-400 rounded-lg bg-green-50 shadow-sm">
             <h4 class="text-md font-semibold text-green-700 mb-3">🎯 Top Match${topMatches.length > 1 ? "es" : ""}</h4>
             <div class="flex flex-wrap gap-3 justify-center">
     `;
 
-    // Detect if both upper and lower exist
-    const hasUpper = topMatches.some(m => m.detected_type === "upper");
-    const hasLower = topMatches.some(m => m.detected_type === "lower");
+                // Detect if both upper and lower exist
+                const hasUpper = topMatches.some(m => m.detected_type === "upper");
+                const hasLower = topMatches.some(m => m.detected_type === "lower");
 
-    if (hasUpper && hasLower) {
-        const upper = topMatches.find(m => m.detected_type === "upper");
-        const lower = topMatches.find(m => m.detected_type === "lower");
+                if (hasUpper && hasLower) {
+                    const upper = topMatches.find(m => m.detected_type === "upper");
+                    const lower = topMatches.find(m => m.detected_type === "lower");
 
-        html += `
+                    html += `
             <div class="relative flex flex-col items-center w-32">
                 <!-- Upper -->
                 <span class="absolute top-1 left-1 bg-green-600 text-white text-[10px] px-2 py-0.5 rounded-md shadow">
@@ -476,15 +557,15 @@ if (topMatches.length > 0) {
                 </p>
             </div>
         `;
-    } else {
-        // Fallback: display each separately (including full-body)
-        topMatches.forEach(match => {
-            let label = match.detected_type || "unknown";
-            let recText = match.recommendation || "Top Match";
-            let similarity = match.similarity ? (match.similarity * 100).toFixed(1) : "N/A";
-            let path = match.path ? normalizePath(match.path) : "#";
+                } else {
+                    // Fallback: display each separately (including full-body)
+                    topMatches.forEach(match => {
+                        let label = match.detected_type || "unknown";
+                        let recText = match.recommendation || "Top Match";
+                        let similarity = match.similarity ? (match.similarity * 100).toFixed(1) : "N/A";
+                        let path = match.path ? normalizePath(match.path) : "#";
 
-            html += `
+                        html += `
                 <div class="relative w-32">
                     <span class="absolute top-1 left-1 bg-green-600 text-white text-[10px] px-2 py-0.5 rounded-md shadow">
                         ${label === "upper" ? "Best Upper-body" : label === "lower" ? "Best Lower-body" : "Top Match"}
@@ -498,37 +579,37 @@ if (topMatches.length > 0) {
                     </p>
                 </div>
             `;
-        });
-    }
+                    });
+                }
 
-    html += `</div></div>`;
-}
+                html += `</div></div>`;
+            }
 
-    // ---------------------------
-    // Display Remaining Uploaded Items
-    // ---------------------------
-    if (uploadedItems.length > 0) {
-        html += `
+            // ---------------------------
+            // Display Remaining Uploaded Items
+            // ---------------------------
+            if (uploadedItems.length > 0) {
+                html += `
             <h4 class="text-md font-semibold text-gray-600 mb-2">Uploaded Items</h4>
             <div class="flex flex-wrap gap-3 mb-6 justify-center">
         `;
 
-        uploadedItems.forEach(it => {
-            if (["accessory", "shoes"].includes(it.detected_type)) return;
-            if (topMatches.some(m => m.path === it.path)) return; // skip top matches
+                uploadedItems.forEach(it => {
+                    if (["accessory", "shoes"].includes(it.detected_type)) return;
+                    if (topMatches.some(m => m.path === it.path)) return; // skip top matches
 
-            // Automatic mode: skip full-body if upper/lower exist
-            if (data.mode === "automatic" && it.detected_type === "full-body" && topMatches.some(m => m.detected_type !== "full-body")) {
-                return;
-            }
+                    // Automatic mode: skip full-body if upper/lower exist
+                    if (data.mode === "automatic" && it.detected_type === "full-body" && topMatches.some(m => m.detected_type !== "full-body")) {
+                        return;
+                    }
 
-            // Categorize similarity
-            let categoryLabel = "";
-            if (it.similarity >= 0.6) categoryLabel = "Highly recommended";
-            else if (it.similarity >= 0.35) categoryLabel = "Moderate match";
-            else categoryLabel = "Weak match";
+                    // Categorize similarity
+                    let categoryLabel = "";
+                    if (it.similarity >= 0.6) categoryLabel = "Highly recommended";
+                    else if (it.similarity >= 0.35) categoryLabel = "Moderate match";
+                    else categoryLabel = "Weak match";
 
-            html += `
+                    html += `
                 <div class="w-32 relative">
                     <img src="${normalizePath(it.path)}" class="w-32 h-32 object-cover rounded-lg border mb-2">
                     <p class="text-[10px] text-gray-500 text-center">
@@ -542,29 +623,110 @@ if (topMatches.length > 0) {
                     </span>
                 </div>
             `;
+                });
+
+                html += `</div>`;
+            }
+
+            document.getElementById("latest-result").innerHTML = html;
+        }
+
+
+
+
+        function normalizePath(path) {
+            return '/ai-wardrobe/' + path.replace(/\\/g, "/").replace(/^\/?ai-wardrobe\//, "");
+        }
+
+        document.getElementById("manual-form").addEventListener("submit", e => {
+            e.preventDefault();
+            submitForm("manual-form");
         });
+        document.getElementById("automatic-form").addEventListener("submit", e => {
+            e.preventDefault();
+            submitForm("automatic-form");
+        });
+    </script>
 
-        html += `</div>`;
-    }
+    <script>
+        let cameraStream = null;
+        let currentMode = 'manual';
+        let useFrontCamera = false; // start with back camera by default
 
-    document.getElementById("latest-result").innerHTML = html;
-}
+        async function openCameraModal(mode) {
+            currentMode = mode;
+            const modal = document.getElementById('camera-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            await startCamera();
+        }
 
+        async function startCamera() {
+            try {
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(t => t.stop());
+                }
 
+                // ✅ use facingMode to toggle between front/back
+                const constraints = {
+                    video: {
+                        facingMode: useFrontCamera ? "user" : "environment"
+                    }
+                };
 
+                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                const video = document.getElementById('camera-stream');
+                video.srcObject = cameraStream;
+            } catch (err) {
+                alert("❌ Unable to access camera: " + err.message);
+                closeCameraModal();
+            }
+        }
 
-function normalizePath(path) {
-    return '/ai-wardrobe/' + path.replace(/\\/g, "/").replace(/^\/?ai-wardrobe\//, "");
-}
+        function switchCamera() {
+            useFrontCamera = !useFrontCamera;
+            startCamera(); // restart stream with new camera
+        }
 
-document.getElementById("manual-form").addEventListener("submit", e => {
-    e.preventDefault();
-    submitForm("manual-form");
-});
-document.getElementById("automatic-form").addEventListener("submit", e => {
-    e.preventDefault();
-    submitForm("automatic-form");
-});
-</script>
+        function closeCameraModal() {
+            const modal = document.getElementById('camera-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(t => t.stop());
+                cameraStream = null;
+            }
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('camera-stream');
+            const canvas = document.getElementById('camera-canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob(blob => {
+                const file = new File([blob], `camera_${Date.now()}.jpg`, {
+                    type: 'image/jpeg'
+                });
+                const input = document.querySelector(`#${currentMode}-form input[type="file"]`);
+
+                const dt = new DataTransfer();
+                Array.from(input.files).forEach(f => dt.items.add(f));
+                dt.items.add(file);
+                input.files = dt.files;
+
+                const previewId = currentMode === 'automatic' ? 'auto-preview' : 'manual-preview';
+                previewImages({
+                    target: input
+                }, previewId);
+
+                closeCameraModal();
+            }, 'image/jpeg');
+        }
+    </script>
+
 </body>
+
 </html>
